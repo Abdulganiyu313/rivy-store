@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import categories from "./routes/categories";
 import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
@@ -20,6 +21,7 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/products", products);
 app.use("/orders", orders);
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(openapi));
+app.use("/categories", categories);
 
 app.use((err: any, _req: any, res: any, _next: any) => {
   logger.error(err);

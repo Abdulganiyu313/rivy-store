@@ -59,8 +59,35 @@ export async function syncAndSeed() {
   const inverters = await Category.create({ name: "Inverters" });
 
   await Product.bulkCreate([
-    { name: "1KW Solar Kit", description: "Entry kit", price: 2500000, stock: 10, categoryId: solar.get("id") as number, imageUrl: "" },
-    { name: "3KW Solar Kit", description: "Home kit", price: 7500000, stock: 5, categoryId: solar.get("id") as number, imageUrl: "" },
-    { name: "5KW Inverter", description: "Pure sine", price: 4200000, stock: 8, categoryId: inverters.get("id") as number, imageUrl: "" }
+    {
+      name: "1KW Solar Kit",
+      description:
+        "Starter solar kit suitable for small apartments: panels, controller, and basic batteries. Ideal for lights, fans, and phone/laptop charging.",
+      price: 2500000,
+      stock: 12,
+      categoryId: solar.get("id") as number,
+      imageUrl:
+        "https://images.unsplash.com/photo-1509395176047-4a66953fd231?q=80&w=1200&auto=format&fit=crop",
+    },
+    {
+      name: "3KW Solar Kit",
+      description:
+        "Full home kit: supports TVs, fridge, lighting, and sockets. Includes MPPT controller and higher-capacity batteries.",
+      price: 7500000,
+      stock: 7,
+      categoryId: solar.get("id") as number,
+      imageUrl:
+        "https://images.unsplash.com/photo-1509395176047-4a66953fd231?q=80&w=1200&auto=format&fit=crop",
+    },
+    {
+      name: "5KW Inverter",
+      description:
+        "Pure sine wave inverter, low noise, high efficiency. Works with existing solar arrays and battery banks.",
+      price: 4200000,
+      stock: 9,
+      categoryId: inverters.get("id") as number,
+      imageUrl:
+        "https://images.unsplash.com/photo-1584270354949-1f19a8b0d3f1?q=80&w=1200&auto=format&fit=crop",
+    },
   ]);
 }

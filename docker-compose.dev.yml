@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: rivy
+      POSTGRES_PASSWORD: rivy
+      POSTGRES_DB: rivy_store
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+
+  api:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm i && npm run dev"
+    environment:
+      DB_HOST: db
+      DB_USER: rivy
+      DB_PASS: rivy
+      DB_NAME: rivy_store
+      DB_PORT: 5432
+      SEED: "true"
+      TS_NODE_DEV: "true"
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./api:/app
+    ports: ["4000:4000"]
+    depends_on: [db]
+
+  web:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm i && npm run dev -- --host"
+    environment:
+      VITE_API_URL: http://localhost:4000
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ./web:/app
+    ports: ["5173:5173"]
+    depends_on: [api]
+
+volumes:
+  pgdata:
