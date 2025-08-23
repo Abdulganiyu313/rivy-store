@@ -1,0 +1,44 @@
+@import "../styles/base.css";
+
+.checkout {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+.checkout__form {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  background: #fff;
+}
+.checkout__aside {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  height: fit-content;
+  background: #fff;
+}
+.mini-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.checkout-success {
+  padding: 32px;
+  text-align: center;
+}
+.order-id {
+  margin: 6px 0 16px;
+}
+
+@media (min-width: 960px) {
+  .checkout {
+    grid-template-columns: 1fr 320px;
+  }
+}

@@ -1,25 +1,69 @@
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../hooks/useCart";
-import { createOrder } from "../api";
+import { apiPost } from "../api";
+import "./checkout.css";
+
+const money = (k: number) =>
+  new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(
+    k / 100
+  );
 
 export default function Checkout() {
-  const { items, clear } = useCart();
+  const { lines, totalKobo, clear } = useCart();
+  const items = Object.values(lines);
   const nav = useNavigate();
 
-  if (!items.length) return <p>Your cart is empty.</p>;
+  if (items.length === 0)
+    return <div className="cart-empty">Cart is empty.</div>;
 
-  const submit = async () => {
-    const body = { items: items.map(i=>({ productId: i.productId, quantity: i.quantity })) };
-    const res = await createOrder(body);
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const customer = {
+      name: String(fd.get("name") || ""),
+      email: String(fd.get("email") || ""),
+      address: String(fd.get("address") || ""),
+    };
+
+    const payload = {
+      customer,
+      lines: items.map((l) => ({ productId: l.id, qty: l.qty })),
+    };
+
+    const key =
+      (crypto as any)?.randomUUID?.() ||
+      Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+    const res = await apiPost<{ orderId: string }>("/api/checkout", payload, {
+      "Idempotency-Key": key,
+    });
+
     clear();
-    nav(`/order/${res.data.id}`);
-  };
+    nav(`/confirmation?orderId=${res.orderId}`);
+  }
 
   return (
-    <div>
+    <div className="checkout">
       <h1>Checkout</h1>
-      <p>Review your items and place order.</p>
-      <button onClick={submit}>Place Order</button>
+      <form onSubmit={onSubmit} className="checkout-form">
+        <label>
+          Name
+          <input name="name" required minLength={2} />
+        </label>
+        <label>
+          Email
+          <input name="email" type="email" required />
+        </label>
+        <label>
+          Address
+          <textarea name="address" required minLength={5} />
+        </label>
+        <div className="summary">
+          <div>Total</div>
+          <strong>{money(totalKobo())}</strong>
+        </div>
+        <button className="primary">Place Order</button>
+      </form>
     </div>
   );
 }

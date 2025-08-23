@@ -1,17 +1,28 @@
-export default function ViewToggle({
-  view,
-  setView,
-}: {
-  view: "grid" | "list";
-  setView: (v: any) => void;
-}) {
+import { useSearchParams } from "react-router-dom";
+
+export default function ViewToggle() {
+  const [sp, setSp] = useSearchParams();
+  const view = sp.get("view") ?? "grid";
+
+  const set = (v: "grid" | "list") => {
+    const next = new URLSearchParams(sp);
+    next.set("view", v);
+    setSp(next);
+  };
+
   return (
-    <div className="view-toggle" role="group" aria-label="View mode">
-      <button aria-pressed={view === "grid"} onClick={() => setView("grid")}>
+    <div className="view-toggle">
+      <button
+        className={view === "grid" ? "active" : ""}
+        onClick={() => set("grid")}
+      >
         ▦
       </button>
-      <button aria-pressed={view === "list"} onClick={() => setView("list")}>
-        ☰
+      <button
+        className={view === "list" ? "active" : ""}
+        onClick={() => set("list")}
+      >
+        ≣
       </button>
     </div>
   );

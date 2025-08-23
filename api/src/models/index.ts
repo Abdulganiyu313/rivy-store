@@ -1,48 +1,121 @@
-import { DataTypes, Model } from "sequelize";
+import {
+  DataTypes,
+  Model,
+  InferAttributes,
+  InferCreationAttributes,
+  CreationOptional,
+} from "sequelize";
 import { sequelize } from "../db";
 
-export class Category extends Model {}
+export class Category extends Model<
+  InferAttributes<Category>,
+  InferCreationAttributes<Category>
+> {
+  declare id: CreationOptional<number>;
+  declare name: string;
+}
 Category.init(
-  { name: { type: DataTypes.STRING, allowNull: false } },
-  { sequelize, modelName: "Category" }
+  {
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+    name: { type: DataTypes.STRING, allowNull: false },
+  },
+  { sequelize, tableName: "Categories", timestamps: true }
 );
 
-export class Product extends Model {}
+export class Product extends Model<
+  InferAttributes<Product>,
+  InferCreationAttributes<Product>
+> {
+  declare id: CreationOptional<number>;
+  declare name: string;
+  declare description: string | null;
+  declare priceKobo: number; // <-- INT kobo
+  declare stock: number;
+  declare minOrder: number;
+  declare brand: string | null;
+  declare category: string | null;
+  declare imageUrl: string | null;
+  declare images: string[] | null;
+  declare financingEligible: boolean | null;
+  declare categoryId: number | null;
+}
 Product.init(
   {
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     name: { type: DataTypes.STRING, allowNull: false },
-    description: DataTypes.TEXT,
-    price: { type: DataTypes.INTEGER, allowNull: false }, // kobo
+    description: { type: DataTypes.TEXT, allowNull: true },
+    priceKobo: { type: DataTypes.INTEGER, allowNull: false }, // <-- align with routes/seed
     stock: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-    imageUrl: DataTypes.STRING,
-    categoryId: { type: DataTypes.INTEGER, allowNull: false },
+    minOrder: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
+    brand: { type: DataTypes.STRING, allowNull: true },
+    category: { type: DataTypes.STRING, allowNull: true },
+    imageUrl: { type: DataTypes.TEXT, allowNull: true },
+    images: { type: DataTypes.JSONB, allowNull: true },
+    financingEligible: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+    },
+    categoryId: { type: DataTypes.INTEGER, allowNull: true },
   },
-  { sequelize, modelName: "Product" }
+  { sequelize, tableName: "Products", timestamps: true }
 );
 
-export class Order extends Model {}
+export class Order extends Model<
+  InferAttributes<Order>,
+  InferCreationAttributes<Order>
+> {
+  declare id: CreationOptional<number>;
+  declare status: string;
+  declare subtotalKobo: number;
+  declare taxKobo: number;
+  declare totalKobo: number;
+  declare name?: string | null;
+  declare email?: string | null;
+  declare address?: string | null;
+  declare currency?: string | null;
+}
 Order.init(
   {
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     status: { type: DataTypes.STRING, defaultValue: "placed" },
-    subtotal: { type: DataTypes.INTEGER, allowNull: false },
-    tax: { type: DataTypes.INTEGER, allowNull: false },
-    total: { type: DataTypes.INTEGER, allowNull: false },
+    subtotalKobo: { type: DataTypes.INTEGER, allowNull: false },
+    taxKobo: { type: DataTypes.INTEGER, allowNull: false },
+    totalKobo: { type: DataTypes.INTEGER, allowNull: false },
+    name: DataTypes.STRING,
+    email: DataTypes.STRING,
+    address: DataTypes.STRING,
+    currency: DataTypes.STRING,
   },
-  { sequelize, modelName: "Order" }
+  { sequelize, tableName: "Orders", timestamps: true }
 );
 
-export class OrderItem extends Model {}
+export class OrderItem extends Model<
+  InferAttributes<OrderItem>,
+  InferCreationAttributes<OrderItem>
+> {
+  declare id: CreationOptional<number>;
+  declare orderId: number;
+  declare productId: number;
+  declare name: string;
+  declare unitPriceKobo: number;
+  declare qty: number;
+  declare subtotalKobo: number;
+}
 OrderItem.init(
   {
+    id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     orderId: { type: DataTypes.INTEGER, allowNull: false },
     productId: { type: DataTypes.INTEGER, allowNull: false },
-    quantity: { type: DataTypes.INTEGER, allowNull: false },
-    unitPrice: { type: DataTypes.INTEGER, allowNull: false },
-    lineTotal: { type: DataTypes.INTEGER, allowNull: false },
+    name: { type: DataTypes.STRING, allowNull: false },
+    unitPriceKobo: { type: DataTypes.INTEGER, allowNull: false },
+    qty: { type: DataTypes.INTEGER, allowNull: false },
+    subtotalKobo: { type: DataTypes.INTEGER, allowNull: false },
   },
-  { sequelize, modelName: "OrderItem" }
+  { sequelize, tableName: "OrderItems", timestamps: true }
 );
 
+// associations (optional for now)
 Category.hasMany(Product, { foreignKey: "categoryId" });
 Product.belongsTo(Category, { foreignKey: "categoryId" });
 
@@ -53,41 +126,5 @@ Product.hasMany(OrderItem, { foreignKey: "productId" });
 OrderItem.belongsTo(Product, { foreignKey: "productId" });
 
 export async function syncAndSeed() {
-  await sequelize.sync({ force: true });
-
-  const solar = await Category.create({ name: "Solar Kits" });
-  const inverters = await Category.create({ name: "Inverters" });
-
-  await Product.bulkCreate([
-    {
-      name: "1KW Solar Kit",
-      description:
-        "Starter solar kit suitable for small apartments: panels, controller, and basic batteries. Ideal for lights, fans, and phone/laptop charging.",
-      price: 2500000,
-      stock: 12,
-      categoryId: solar.get("id") as number,
-      imageUrl:
-        "https://images.unsplash.com/photo-1509395176047-4a66953fd231?q=80&w=1200&auto=format&fit=crop",
-    },
-    {
-      name: "3KW Solar Kit",
-      description:
-        "Full home kit: supports TVs, fridge, lighting, and sockets. Includes MPPT controller and higher-capacity batteries.",
-      price: 7500000,
-      stock: 7,
-      categoryId: solar.get("id") as number,
-      imageUrl:
-        "https://images.unsplash.com/photo-1509395176047-4a66953fd231?q=80&w=1200&auto=format&fit=crop",
-    },
-    {
-      name: "5KW Inverter",
-      description:
-        "Pure sine wave inverter, low noise, high efficiency. Works with existing solar arrays and battery banks.",
-      price: 4200000,
-      stock: 9,
-      categoryId: inverters.get("id") as number,
-      imageUrl:
-        "https://images.unsplash.com/photo-1584270354949-1f19a8b0d3f1?q=80&w=1200&auto=format&fit=crop",
-    },
-  ]);
+  await sequelize.sync({ alter: true }); // ok for dev
 }
