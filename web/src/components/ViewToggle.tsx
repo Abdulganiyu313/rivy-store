@@ -5,10 +5,10 @@ export default function ViewToggle() {
   const [sp, setSp] = useSearchParams();
   const view = (sp.get("view") as "grid" | "list") ?? "grid";
 
-  const set = (v: "grid" | "list") => {
+  const setView = (v: "grid" | "list") => {
     const next = new URLSearchParams(sp);
     next.set("view", v);
-    next.delete("page"); // keep UX consistent: reset pagination when layout changes
+    next.delete("page"); // reset pagination when layout changes
     setSp(next);
   };
 
@@ -17,18 +17,18 @@ export default function ViewToggle() {
       <button
         type="button"
         className={`${styles.btn} ${view === "grid" ? styles.active : ""}`}
-        onClick={() => set("grid")}
-        aria-label="Grid view"
+        onClick={() => setView("grid")}
+        aria-pressed={view === "grid"}
       >
-        ▦
+        Grid
       </button>
       <button
         type="button"
         className={`${styles.btn} ${view === "list" ? styles.active : ""}`}
-        onClick={() => set("list")}
-        aria-label="List view"
+        onClick={() => setView("list")}
+        aria-pressed={view === "list"}
       >
-        ≣
+        List
       </button>
     </div>
   );

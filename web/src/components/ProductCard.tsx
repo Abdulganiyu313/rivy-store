@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import type { Product } from "../api";
 import styles from "./ProductCard.module.css";
+import { useCartStore } from "../stores/useCart";
+import { toast } from "../hooks/useToast";
 
 type Props = {
   product: Product;
@@ -8,7 +10,6 @@ type Props = {
   onAdd?: (p: Product) => void;
 };
 
-// local price formatter (kept from your version)
 const fmtNaira = (kobo?: number | null) =>
   typeof kobo === "number" && !Number.isNaN(kobo)
     ? `₦${(kobo / 100).toLocaleString()}`
@@ -16,11 +17,23 @@ const fmtNaira = (kobo?: number | null) =>
 
 export default function ProductCard({ product, view = "grid", onAdd }: Props) {
   const list = view === "list";
+  const descId = `pdesc-${product.id}`;
+  const add = useCartStore((s) => s.add);
+
+  const handleAdd = () => {
+    if (onAdd) {
+      onAdd(product);
+      return;
+    }
+    add(product, 1);
+    toast.success(`Added ${product.name} to cart`);
+  };
 
   return (
     <li
       className={`${styles.card} ${list ? styles.list : ""}`}
       data-testid="product-card"
+      aria-describedby={product.description ? descId : undefined}
     >
       <div className={styles.media}>
         <img
@@ -44,6 +57,12 @@ export default function ProductCard({ product, view = "grid", onAdd }: Props) {
           )}
         </div>
 
+        {product.description && (
+          <p id={descId} className={styles.desc} title={product.description}>
+            {product.description}
+          </p>
+        )}
+
         <div className={styles.meta}>
           <span className={styles.price}>{fmtNaira(product.priceKobo)}</span>
           <span>Min. order: {(product as any).minOrder || 1} unit</span>
@@ -53,7 +72,7 @@ export default function ProductCard({ product, view = "grid", onAdd }: Props) {
           <button
             type="button"
             className="btn btn--primary btn-sm"
-            onClick={() => onAdd?.(product)}
+            onClick={handleAdd}
             aria-label={`Add ${product.name} to cart`}
           >
             Add

@@ -63,3 +63,20 @@
 .price {
   font-weight: 600;
 }
+/* truncated description */
+.desc {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; /* Safari/Chromium */
+  line-clamp: 2; /* standard (where supported) */
+  overflow: hidden;
+}
+
+.list .desc {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}

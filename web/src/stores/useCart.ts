@@ -33,10 +33,11 @@ export const useCartStore = create<State>()(
         }),
       clear: () => set({ items: [] }),
       totalKobo: () =>
-        (get().items || []).reduce(
-          (a, i) => a + i.product.priceKobo * i.qty,
-          0
-        ),
+        get().items.reduce((sum, i) => {
+          const price =
+            typeof i.product.priceKobo === "number" ? i.product.priceKobo : 0;
+          return sum + price * i.qty;
+        }, 0),
     }),
     {
       // new storage key so we don't read any old/stale shapes

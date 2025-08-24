@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { useRoutes, Navigate } from "react-router-dom";
+import { ToastProvider } from "./components/ToastProvider";
 import Header from "./components/Header";
 import Loader from "./components/Loader";
 import Footer from "./components/Footer";
@@ -33,10 +34,10 @@ export default function App() {
   ]);
 
   return (
-    <>
+    <ToastProvider>
       <Header />
       <Suspense fallback={<Loader full />}>{element}</Suspense>
       <Footer />
-    </>
+    </ToastProvider>
   );
 }

@@ -1,22 +1,39 @@
 import { useCartStore } from "../stores/useCart";
 import SafePrice from "../components/SafePrice";
-import { api } from "../api";
+import { checkout } from "../api";
 import { useNavigate } from "react-router-dom";
+import { toast } from "../hooks/useToast";
 
 export default function Cart() {
   const { items, remove, setQty, totalKobo, clear } = useCartStore();
   const nav = useNavigate();
 
-  const checkout = async () => {
+  // Null-safe subtotal (treat non-number priceKobo as 0)
+  const rawTotal = totalKobo();
+  const subtotalKobo = Number.isFinite(rawTotal)
+    ? (rawTotal as number)
+    : items.reduce((sum, i) => {
+        const unit =
+          typeof i.product.priceKobo === "number" ? i.product.priceKobo : 0;
+        return sum + unit * i.qty;
+      }, 0);
+
+  const doCheckout = async () => {
+    if (!items.length) return;
     const payload = {
       items: items.map((i) => ({ productId: i.product.id, qty: i.qty })),
     };
     try {
-      const res = await api.checkout(payload);
+      const res = await checkout(payload);
+      toast.success("Order placed!");
       clear();
       nav(`/checkout-success?orderId=${encodeURIComponent(res.orderId)}`);
     } catch (e: any) {
-      alert(e.message || "Checkout failed");
+      const msg =
+        e?.message ||
+        (typeof e?.toString === "function" ? e.toString() : null) ||
+        "Checkout failed";
+      toast.error(String(msg));
     }
   };
 
@@ -58,7 +75,7 @@ export default function Cart() {
                   </div>
                 </div>
                 <div>
-                  <SafePrice kobo={i.product.priceKobo} />
+                  <SafePrice kobo={i.product.priceKobo ?? 0} />
                 </div>
                 <div>
                   <input
@@ -67,12 +84,20 @@ export default function Cart() {
                     min={1}
                     value={i.qty}
                     onChange={(e) =>
-                      setQty(i.product.id, Math.max(1, Number(e.target.value)))
+                      setQty(
+                        i.product.id,
+                        Math.max(1, Number(e.target.value) || 1)
+                      )
                     }
+                    aria-label={`Quantity for ${i.product.name}`}
                   />
                 </div>
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button className="btn" onClick={() => remove(i.product.id)}>
+                  <button
+                    className="btn"
+                    onClick={() => remove(i.product.id)}
+                    aria-label={`Remove ${i.product.name}`}
+                  >
                     Remove
                   </button>
                 </div>
@@ -90,14 +115,10 @@ export default function Cart() {
             >
               <span>Subtotal</span>
               <strong>
-                <SafePrice kobo={totalKobo()} />
+                <SafePrice kobo={subtotalKobo} />
               </strong>
             </div>
-            <button
-              className="btn primary"
-              onClick={checkout}
-              aria-label="Proceed to checkout"
-            >
+            <button className="btn primary" onClick={doCheckout}>
               Proceed to Checkout
             </button>
           </div>

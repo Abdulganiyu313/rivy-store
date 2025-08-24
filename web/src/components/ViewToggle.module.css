@@ -4,12 +4,12 @@
 }
 
 .btn {
-  padding: 6px 10px;
+  padding: 8px 12px; /* a bit taller for text */
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   background: #fff;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1;
   transition: all 0.15s ease;
 }
