@@ -1,42 +1,125 @@
-#root {
-  max-width: 1280px;
+/* -------- Header —— blends old visual with new tokens -------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+}
+.site-header__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand__emoji {
+  font-size: 22px;
+}
+.brand__link {
+  text-decoration: none;
+  color: #111;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 0.2px;
+}
+.brand__by {
+  color: #0f766e;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.site-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* buttons/links (compatible with your previous look) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #111;
+}
+.btn:hover {
+  transform: translateY(-1px);
+}
+.btn.primary {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+  font-weight: 800;
+}
+.btn.outline {
+  background: #fff;
+}
+.link.ghost {
+  padding: 8px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #111;
+  border: 1px solid transparent;
+}
+.link.ghost:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* cart chip */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  color: #111;
+}
+.chip__badge {
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
   text-align: center;
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: #10b981;
+  border-radius: 999px;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+/* misc */
+.hello {
+  color: #6b7280;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+} /* keep if not already defined */
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+/* keyboard focus */
+.btn:focus-visible,
+.chip:focus-visible,
+.brand__link:focus-visible {
+  outline: 3px solid rgba(16, 185, 129, 0.45);
+  outline-offset: 2px;
 }

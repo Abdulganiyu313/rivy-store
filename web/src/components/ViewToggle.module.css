@@ -1,0 +1,31 @@
+.wrap {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.btn {
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.btn:hover {
+  background: #f9fafb;
+}
+
+.active {
+  background: #eefdf6;
+  border-color: #10b981;
+  color: #0f766e;
+  font-weight: 600;
+}
+
+.btn:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}

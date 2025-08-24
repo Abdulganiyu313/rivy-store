@@ -1,144 +1,174 @@
-// Centralized API helpers + types. Safe if VITE_API_URL is missing.
+// web/src/api.ts
+// Minimal HTTP helper (no axios) + shared types/utilities + product/checkout helpers.
 
-const RAW = (import.meta as any).env?.VITE_API_URL as string | undefined;
-const CLEAN = (RAW || "").replace(/\/+$/, "");
-export const API_URL = CLEAN || "";
-export const API_URL_OK = Boolean(CLEAN);
-export const API_URL_DISPLAY = RAW ?? "(unset)";
+const BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ||
+  "";
 
-function resolveUrl(path: string) {
-  if (/^https?:\/\//i.test(path)) return path;
-  if (API_URL_OK) {
-    return path.startsWith("/") ? `${API_URL}${path}` : `${API_URL}/${path}`;
+// Build URL with query params
+function withQuery(path: string, params?: Record<string, any>): string {
+  const url = new URL((BASE || "") + path, window.location.origin);
+  if (params) {
+    const usp = new URLSearchParams(url.search);
+    Object.entries(params).forEach(([k, v]) => {
+      if (v === undefined || v === null || v === "") return;
+      usp.set(k, String(v));
+    });
+    url.search = usp.toString();
   }
-  // Fallback to same-origin (dev only). This will likely fail with HTML,
-  // but we’ll surface a readable error via ensureJson.
-  return path.startsWith("/") ? path : `/${path}`;
+  return url.toString();
 }
 
-async function ensureJson(res: Response, url: string) {
-  const ct = res.headers.get("content-type") || "";
-  if (ct.includes("application/json")) return res.json();
-  const text = await res.text().catch(() => "");
-  const snippet = text.slice(0, 200).replace(/\s+/g, " ").trim();
-  throw new Error(
-    `Expected JSON from ${url} but got ${
-      ct || "unknown"
-    }. First bytes: ${snippet}`
-  );
-}
+/* -------------------- tiny HTTP client -------------------- */
+export const api = {
+  async get<T = any>(path: string, opts?: { params?: Record<string, any> }) {
+    const res = await fetch(withQuery(path, opts?.params), {
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || `GET ${path} failed (${res.status})`);
+    }
+    const data = (await res.json()) as T;
+    return { data };
+  },
 
+  async post<T = any>(
+    path: string,
+    body?: any,
+    headers?: Record<string, string>
+  ) {
+    const res = await fetch((BASE || "") + path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(headers || {}) },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(text || `POST ${path} failed (${res.status})`);
+    }
+    const data = (await res.json()) as T;
+    return { data };
+  },
+};
+
+// Convenience wrapper used around the app
 export async function apiGet<T = any>(
-  path: string,
-  init?: RequestInit
-): Promise<T> {
-  const url = resolveUrl(path);
-  const res = await fetch(url, { ...(init || {}), method: "GET" });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`GET ${url} failed (${res.status}). ${body.slice(0, 160)}`);
-  }
-  return ensureJson(res, url);
+  url: string,
+  params?: Record<string, any>
+) {
+  const { data } = await api.get<T>(url, { params });
+  return data as T;
 }
 
-export async function apiPost<T = any>(
-  path: string,
-  body?: any,
-  init?: RequestInit
-): Promise<T> {
-  const url = resolveUrl(path);
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
-    body: body === undefined ? undefined : JSON.stringify(body),
-    ...(init || {}),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(
-      `POST ${url} failed (${res.status}). ${text.slice(0, 160)}`
-    );
-  }
-  return ensureJson(res, url);
-}
-
-// --- Types and typed helpers ---
+/* ------------------------- Types ------------------------- */
 export type Product = {
-  id: string;
+  id: number;
   name: string;
   description?: string;
   priceKobo: number;
   stock: number;
-  minOrder: number;
   imageUrl?: string | null;
   brand?: string | null;
-  categoryId?: string | null;
+  category?: string | null; // category NAME (e.g. "Batteries")
   financingEligible?: boolean | null;
-  createdAt?: string;
-};
-
-export type Paged<T> = {
-  data: T[];
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
 };
 
 export type ProductQuery = {
   q?: string;
-  categoryId?: string;
-  brand?: string;
+  category?: string; // filter by NAME
   minPriceKobo?: number;
   maxPriceKobo?: number;
   inStock?: boolean;
   financingEligible?: boolean;
+  brand?: string;
   sort?: "relevance" | "price_asc" | "price_desc" | "newest";
   page?: number;
   limit?: number;
-  view?: "grid" | "list";
 };
 
-export async function fetchProducts(
-  params: ProductQuery
-): Promise<Paged<Product>> {
-  const usp = new URLSearchParams();
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== "") usp.set(k, String(v));
-  });
-  return apiGet(`/products?${usp.toString()}`);
-}
-
-export async function fetchProductById(id: string): Promise<Product> {
-  return apiGet(`/products/${id}`);
-}
-
-export type CheckoutItem = { productId: string; quantity: number };
-export type CheckoutPayload = {
-  idempotencyKey: string;
+export type CheckoutLine = { productId: number | string; qty: number };
+export type CheckoutRequest = {
   customer: { name: string; email: string; address: string };
-  items: CheckoutItem[];
+  lines: CheckoutLine[];
 };
 export type CheckoutResponse = {
-  orderId: string;
-  subtotalKobo: number;
-  currency: "NGN";
+  orderId: number | string;
+  items: Array<{
+    productId: number | string;
+    name: string;
+    qty: number;
+    unitPriceKobo: number;
+    subtotalKobo: number;
+  }>;
+  totals: { totalKobo: number };
 };
-export async function checkout(
-  payload: CheckoutPayload
-): Promise<CheckoutResponse> {
-  return apiPost("/checkout", payload);
+
+/* ---------------------- API helpers ---------------------- */
+export async function fetchProducts(params: ProductQuery) {
+  // backend exposes /api/products (alias to /products)
+  return apiGet<{
+    data: Product[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  }>("/api/products", params);
 }
 
-export async function fetchBrands(): Promise<string[]> {
-  return apiGet("/products/brands");
+// Returns category NAMES (strings) from { data: string[] } or a raw string[]
+export async function fetchCategories(): Promise<
+  Array<{ id: string; name: string }>
+> {
+  const res = await apiGet<any>("/categories");
+  const arr: any[] = Array.isArray(res?.data)
+    ? res.data
+    : Array.isArray(res)
+    ? res
+    : [];
+  return arr.map((x) =>
+    typeof x === "string"
+      ? { id: x, name: x }
+      : { id: String(x.id ?? x.name), name: String(x.name ?? x.id) }
+  );
 }
-export type Category = { id: string; name: string };
-export async function fetchCategories(): Promise<Category[]> {
-  return apiGet("/categories");
+
+/* --------- product detail + checkout (new helpers) --------- */
+export async function getProduct(id: number | string) {
+  // mounted at /api/products/:id
+  const { data } = await api.get<Product>(`/api/products/${id}`);
+  return data;
 }
-export function formatKobo(kobo: number) {
-  return `₦${(kobo / 100).toLocaleString("en-NG", {
-    minimumFractionDigits: 2,
-  })}`;
+
+export async function checkout(
+  payload: CheckoutRequest,
+  idempotencyKey?: string
+) {
+  const headers: Record<string, string> = {};
+  if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
+  const { data } = await api.post<CheckoutResponse>(
+    "/api/checkout",
+    payload,
+    headers
+  );
+  return data;
 }
+
+/* -- attach to api object for backward-compatible imports -- */
+// So code like `api.getProduct(id)` / `api.checkout(body)` keeps working.
+(api as any).getProduct = getProduct;
+(api as any).checkout = checkout;
+
+/* ----------------------- Utilities ----------------------- */
+export function asNaira(kobo: number | null | undefined) {
+  const naira = (Number(kobo ?? 0) || 0) / 100;
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(naira);
+}
+
+// Optional alias if some files import { http }
+export const http = api;

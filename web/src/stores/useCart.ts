@@ -1,57 +1,51 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type { Product } from "../api";
 
-export type CartItem = {
-  id: string;
-  name: string;
-  priceKobo: number; // integer (kobo)
-  minOrder: number; // step size
-  imageUrl: string;
-  quantity: number; // must be multiples of minOrder
-};
-
-type CartState = {
+type CartItem = { product: Product; qty: number };
+type State = {
   items: CartItem[];
-  add: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void;
-  update: (id: string, quantity: number) => void;
-  remove: (id: string) => void;
+  add: (p: Product, qty?: number) => void;
+  remove: (id: number) => void;
+  setQty: (id: number, qty: number) => void;
   clear: () => void;
-  count: () => number; // total line items count (not sum of qty)
+  totalKobo: () => number;
 };
 
-export const useCart = create<CartState>((set, get) => ({
-  items: [],
-
-  add: (item) =>
-    set((state) => {
-      const min = Math.max(1, item.minOrder || 1);
-      const qty = Math.max(min, Math.floor((item.quantity ?? min) / min) * min);
-      const idx = state.items.findIndex((x) => x.id === item.id);
-      if (idx >= 0) {
-        const next = [...state.items];
-        const newQty = next[idx].quantity + qty;
-        // snap to step
-        next[idx] = { ...next[idx], quantity: Math.floor(newQty / min) * min };
-        return { items: next };
-      }
-      return { items: [...state.items, { ...item, quantity: qty }] };
+export const useCartStore = create<State>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      add: (product, qty = 1) => {
+        const items = Array.isArray(get().items) ? [...get().items] : [];
+        const i = items.findIndex((x) => x.product.id === product.id);
+        if (i >= 0) items[i] = { ...items[i], qty: items[i].qty + qty };
+        else items.push({ product, qty });
+        set({ items });
+      },
+      remove: (id) =>
+        set({ items: (get().items || []).filter((i) => i.product.id !== id) }),
+      setQty: (id, qty) =>
+        set({
+          items: (get().items || []).map((i) =>
+            i.product.id === id ? { ...i, qty: Math.max(1, qty) } : i
+          ),
+        }),
+      clear: () => set({ items: [] }),
+      totalKobo: () =>
+        (get().items || []).reduce(
+          (a, i) => a + i.product.priceKobo * i.qty,
+          0
+        ),
     }),
+    {
+      // new storage key so we don't read any old/stale shapes
+      name: "cart:v2",
+      // only persist what's needed
+      partialize: (s) => ({ items: s.items }),
+    }
+  )
+);
 
-  update: (id, quantity) =>
-    set((state) => {
-      const next = state.items.map((it) => {
-        if (it.id !== id) return it;
-        const min = Math.max(1, it.minOrder || 1);
-        const q = Math.max(min, Math.floor(quantity / min) * min);
-        return { ...it, quantity: q };
-      });
-      return { items: next };
-    }),
-
-  remove: (id) =>
-    set((state) => ({ items: state.items.filter((it) => it.id !== id) })),
-  clear: () => set({ items: [] }),
-
-  count: () => get().items.length,
-}));
-
-export default useCart;
+// allow both default and named imports
+export default useCartStore;

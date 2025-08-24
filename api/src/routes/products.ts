@@ -1,55 +1,82 @@
-// Full replacement: adds inStock & financingEligible filters, keeps search/sort/pagination.
-
+// api/src/routes/products.ts
 import { Router, Request, Response } from "express";
-import { Op, WhereOptions, fn, col, literal } from "sequelize";
+import { Op, WhereOptions, literal, fn, col } from "sequelize";
+import { z } from "zod";
 import { Product } from "../models";
-import type { Order } from "sequelize";
+import { CATEGORY_LIST, isCategory } from "../constants/categories";
 
 const router = Router();
 
+/**
+ * Validation for query parameters
+ * - Accepts your fixed category names exactly (enum)
+ * - Supports search, price range (kobo), stock, financing, pagination, and sort
+ */
+const QuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  category: z
+    .enum(CATEGORY_LIST as unknown as [string, ...string[]])
+    .optional(),
+  minPriceKobo: z.coerce.number().int().nonnegative().optional(),
+  maxPriceKobo: z.coerce.number().int().nonnegative().optional(),
+  inStock: z.coerce.boolean().optional(),
+  financingEligible: z.coerce.boolean().optional(),
+  brand: z.string().trim().optional(),
+  sort: z
+    .enum(["relevance", "price_asc", "price_desc", "newest"])
+    .default("relevance"),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(48).default(12),
+});
+
 router.get("/", async (req: Request, res: Response) => {
+  // Validate inputs
   const {
     q,
-    categoryId,
-    brand,
+    category,
     minPriceKobo,
     maxPriceKobo,
     inStock,
     financingEligible,
-    sort = "relevance",
-    page = "1",
-    limit = "12",
-  } = req.query as Record<string, string>;
+    brand,
+    sort,
+    page,
+    limit,
+  } = QuerySchema.parse(req.query);
 
+  // Build WHERE
   const where: WhereOptions = {};
+
   if (q) {
     const ilike = { [Op.iLike]: `%${q}%` };
     Object.assign(where, {
       [Op.or]: [{ name: ilike }, { description: ilike }, { brand: ilike }],
     });
   }
-  if (categoryId) Object.assign(where, { categoryId });
+
   if (brand) Object.assign(where, { brand });
-  if (minPriceKobo || maxPriceKobo) {
+
+  if (typeof minPriceKobo === "number" || typeof maxPriceKobo === "number") {
     Object.assign(where, {
       priceKobo: {
-        ...(minPriceKobo ? { [Op.gte]: Number(minPriceKobo) } : {}),
-        ...(maxPriceKobo ? { [Op.lte]: Number(maxPriceKobo) } : {}),
+        ...(typeof minPriceKobo === "number" ? { [Op.gte]: minPriceKobo } : {}),
+        ...(typeof maxPriceKobo === "number" ? { [Op.lte]: maxPriceKobo } : {}),
       },
     });
   }
-  if (inStock === "true") Object.assign(where, { stock: { [Op.gt]: 0 } });
-  if (financingEligible === "true")
-    Object.assign(where, { financingEligible: true });
 
-  const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
-  const limitNum = Math.min(
-    100,
-    Math.max(1, parseInt(String(limit), 10) || 12)
-  );
-  const offset = (pageNum - 1) * limitNum;
+  if (inStock) Object.assign(where, { stock: { [Op.gt]: 0 } });
+  if (typeof financingEligible === "boolean")
+    Object.assign(where, { financingEligible });
 
-  const order: Order =
+  // Category filter (exact match from fixed list)
+  if (category && isCategory(category)) {
+    Object.assign(where, { category });
+  }
+
+  // Pagination & sort
+  const offset = (page - 1) * limit;
+  const order =
     sort === "price_asc"
       ? [["priceKobo", "ASC"]]
       : sort === "price_desc"
@@ -57,25 +84,31 @@ router.get("/", async (req: Request, res: Response) => {
       : sort === "newest"
       ? [["createdAt", "DESC"]]
       : [
-          [literal(`CASE WHEN stock > 0 THEN 0 ELSE 1 END`), "ASC"],
+          [literal(`CASE WHEN "stock" > 0 THEN 0 ELSE 1 END`), "ASC"],
           ["createdAt", "DESC"],
         ];
 
+  // Query
   const { rows, count } = await Product.findAndCountAll({
     where,
-    order,
-    limit: limitNum,
+    order: order as any,
+    limit,
     offset,
   });
+
   res.json({
     data: rows,
-    page: pageNum,
-    limit: limitNum,
+    page,
+    limit,
     total: count,
-    totalPages: Math.max(1, Math.ceil(count / limitNum)),
+    totalPages: Math.max(1, Math.ceil(count / limit)),
   });
 });
 
+/**
+ * GET /products/brands
+ * Optional helper: returns distinct brand list for filters
+ */
 router.get("/brands", async (_req, res) => {
   const rows = await Product.findAll({
     attributes: [[fn("DISTINCT", col("brand")), "brand"]],
@@ -86,6 +119,9 @@ router.get("/brands", async (_req, res) => {
   res.json(rows.map((r: any) => r.brand).filter(Boolean));
 });
 
+/**
+ * GET /products/:id
+ */
 router.get("/:id", async (req, res) => {
   const p = await Product.findByPk(req.params.id);
   if (!p) return res.status(404).json({ message: "Product not found" });

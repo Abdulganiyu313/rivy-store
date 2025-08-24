@@ -1,12 +1,13 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useCart } from "../hooks/useCart";
+import useCartStore from "../stores/useCart";
 import { useAuth } from "../hooks/useAuth";
 
-function CartIcon() {
+function CartSvg(props: React.SVGProps<SVGSVGElement>) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg viewBox="0 0 24 24" width="24" height="24" {...props}>
       <path
         d="M6 6h15l-2 9H8L6 3H3"
+        fill="none"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
@@ -18,112 +19,82 @@ function CartIcon() {
   );
 }
 
+function BrandMark() {
+  return (
+    <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden>
+      <path
+        d="M4 17h13l2-8H6L5 5H2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="9" cy="20" r="1.6" fill="currentColor" />
+      <circle cx="17" cy="20" r="1.6" fill="currentColor" />
+    </svg>
+  );
+}
+
 export default function Header() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  // cart count (defensive)
-  const linesMap = useCart((s) => s.lines ?? {});
-  const count = Object.values(linesMap as Record<string, any>).reduce(
-    (n, l: any) => n + (Number(l?.qty ?? 0) || 0),
-    0
-  );
+  // tolerant cart count (works with any persisted shape)
+  const count = useCartStore((s: any) => {
+    if (Array.isArray(s?.items)) {
+      return s.items.reduce(
+        (a: number, i: any) => a + (Number(i?.qty ?? 0) || 0),
+        0
+      );
+    }
+    const lines = s?.lines || {};
+    return Object.values(lines).reduce(
+      (n: number, l: any) => n + (Number(l?.qty ?? 0) || 0),
+      0
+    );
+  });
 
-  // auth
   const { user, logout } = useAuth();
 
   return (
-    <header
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 30,
-        background: "#fff",
-        borderBottom: "1px solid #eee",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "12px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          justifyContent: "space-between",
-        }}
-      >
-        {/* left: logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span aria-hidden style={{ fontSize: 22 }}>
-            🛒
+    <header className="site-header" role="banner">
+      <div className="container site-header__bar">
+        {/* brand (icon + stacked text like staging) */}
+        <Link to="/catalog" className="brand" aria-label="energystack home">
+          <span className="brand__icon">
+            <BrandMark />
           </span>
-          <Link
-            to="/"
-            style={{
-              textDecoration: "none",
-              color: "#111",
-              fontWeight: 800,
-              fontSize: 20,
-            }}
-          >
-            energystack{" "}
-            <span style={{ color: "#0f766e", fontWeight: 700, fontSize: 14 }}>
-              by rivy
-            </span>
-          </Link>
-        </div>
+          <span className="brand__stack">
+            <span className="brand__name">energystack</span>
+            <span className="brand__by">by rivy</span>
+          </span>
+        </Link>
 
-        {/* right actions */}
-        <nav style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {/* Cart chip */}
+        <nav className="site-header__nav" aria-label="Primary">
+          {/* cart link with floating count badge */}
           <button
+            type="button"
+            className="cartLink"
             onClick={() => navigate("/cart")}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 12px",
-              borderRadius: 12,
-              border: "1px solid #e5e7eb",
-              background: "#fff",
-              cursor: "pointer",
-            }}
+            aria-label={`Open cart (${count})`}
           >
-            <CartIcon />
-            <span>Cart</span>
-            <span
-              style={{
-                minWidth: 18,
-                height: 18,
-                lineHeight: "18px",
-                borderRadius: 999,
-                padding: "0 6px",
-                fontSize: 12,
-                fontWeight: 700,
-                background: "#10b981",
-                color: "#fff",
-                textAlign: "center",
-              }}
-            >
-              {count}
+            <span className="cartIconWrap">
+              <CartSvg />
+              <span className="cartBadge" aria-live="polite">
+                {count}
+              </span>
             </span>
+            <span>Cart</span>
           </button>
 
-          {/* Auth */}
           {user ? (
             <>
-              <span style={{ color: "#6b7280" }}>Hi, {user.name}</span>
+              <span className="hello">Hi, {user.name}</span>
               <button
+                type="button"
+                className="btn btn--outline"
                 onClick={logout}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 12,
-                  border: "1px solid #e5e7eb",
-                  background: "#fff",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
               >
                 Logout
               </button>
@@ -133,29 +104,14 @@ export default function Header() {
               <Link
                 to="/login"
                 state={{ from: pathname }}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 12,
-                  border: "1px solid #e5e7eb",
-                  textDecoration: "none",
-                  color: "#111",
-                  fontWeight: 600,
-                }}
+                className="btn btn--outline"
               >
                 Login
               </Link>
-
               <Link
                 to="/signup"
                 state={{ from: pathname }}
-                style={{
-                  padding: "10px 14px",
-                  borderRadius: 12,
-                  background: "#10b981",
-                  color: "#fff",
-                  textDecoration: "none",
-                  fontWeight: 800,
-                }}
+                className="btn btn--primary btn--nowrap"
               >
                 Create Account
               </Link>

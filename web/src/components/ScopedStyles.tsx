@@ -1,4 +1,3 @@
-// path: web/src/components/ScopedStyles.tsx
 import { useEffect } from "react";
 
 type Props = { scopeId: string };
@@ -11,7 +10,7 @@ export default function ScopedStyles({ scopeId }: Props) {
 #${scopeId} *, #${scopeId} *::before, #${scopeId} *::after { box-sizing:inherit !important; }
 #${scopeId} .shell { display:grid !important; grid-template-columns:1fr !important; gap:16px !important; align-items:start !important; }
 @media (min-width:960px){ #${scopeId} .shell { grid-template-columns:280px 1fr !important; gap:24px !important; } }
-#${scopeId} .search { display:grid !important; grid-template-columns:1fr auto !important; gap:8px !important; margin:0 0 12px 0 !important; }
+#${scopeId} .search { display:grid !important; grid-template-columns:1fr auto !important; gap:8px !important; margin:0 0 12px 0 !important; max-width:760px !important; }
 #${scopeId} .filters h2 { margin:0 0 8px 0 !important; font-size:18px !important; }
 #${scopeId} .filters .card { position:sticky !important; top:12px !important; border:1px solid #e5e7eb !important; border-radius:12px !important; padding:12px !important; background:#fff !important; display:grid !important; gap:12px !important; }
 #${scopeId} .filters .row { display:flex !important; gap:8px !important; }
@@ -39,12 +38,32 @@ export default function ScopedStyles({ scopeId }: Props) {
 #${scopeId} .pages { display:inline-flex !important; gap:6px !important; }
 #${scopeId} .pill { border:1px solid #e5e7eb !important; background:#fff !important; padding:6px 10px !important; border-radius:8px !important; cursor:pointer !important; }
 #${scopeId} .pill.active { background:#eefdf6 !important; border-color:#10b981 !important; }
+#${scopeId} .cat-list { display:grid !important; gap:10px !important; max-height:280px !important; overflow:auto !important; padding-right:6px !important; }
+#${scopeId} .radio { display:flex !important; align-items:center !important; gap:10px !important; cursor:pointer !important; user-select:none !important; }
+#${scopeId} .radio input { appearance:none !important; width:16px !important; height:16px !important; border:2px solid #94a3b8 !important; border-radius:999px !important; position:relative !important; }
+#${scopeId} .radio input:checked { border-color:#10b981 !important; }
+#${scopeId} .radio input:checked::after { content:"" !important; position:absolute !important; inset:3px !important; background:#10b981 !important; border-radius:999px !important; }
+#${scopeId} .radio span { font-weight:600 !important; color:#111827 !important; }
 `;
-    const style = document.createElement("style");
-    style.setAttribute("data-scoped", scopeId);
+    const attr = `scoped-${scopeId}`;
+    // Reuse if it exists to avoid duplicates on re-render
+    let style = document.querySelector<HTMLStyleElement>(
+      `style[data-scoped="${attr}"]`
+    );
+    if (!style) {
+      style = document.createElement("style");
+      style.setAttribute("data-scoped", attr);
+      document.head.appendChild(style);
+    }
     style.textContent = css;
-    document.head.appendChild(style);
-    return () => document.head.removeChild(style);
+
+    // cleanup must return void
+    return () => {
+      const el = document.querySelector(`style[data-scoped="${attr}"]`);
+      if (el && el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    };
   }, [scopeId]);
 
   return null;

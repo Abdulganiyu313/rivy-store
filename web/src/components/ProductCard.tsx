@@ -1,92 +1,71 @@
-// path: web/src/components/ProductCard.tsx
-import React from "react";
-import { type Product } from "../api";
+import { Link } from "react-router-dom";
+import type { Product } from "../api";
+import styles from "./ProductCard.module.css";
 
-type Props = { product: Product; view?: "grid" | "list" };
-
-const cardBase: React.CSSProperties = {
-  border: "1px solid #e5e7eb",
-  borderRadius: 12,
-  background: "#fff",
-  overflow: "hidden",
-  display: "grid",
-  gridTemplateRows: "auto 1fr",
+type Props = {
+  product: Product;
+  view?: "grid" | "list";
+  onAdd?: (p: Product) => void;
 };
 
-const cardList: React.CSSProperties = {
-  gridTemplateColumns: "160px 1fr",
-  gridTemplateRows: "auto",
-};
-
-const mediaImg: React.CSSProperties = {
-  width: "100%",
-  aspectRatio: "4 / 3",
-  objectFit: "cover",
-  display: "block",
-};
-
-const body: React.CSSProperties = { padding: 10, display: "grid", gap: 8 };
-const title: React.CSSProperties = {
-  margin: 0,
-  fontSize: 15,
-  lineHeight: 1.3,
-  fontWeight: 600,
-};
-const badges: React.CSSProperties = {
-  display: "flex",
-  gap: 8,
-  flexWrap: "wrap",
-};
-const badge: React.CSSProperties = {
-  fontSize: 12,
-  border: "1px solid #e5e7eb",
-  padding: "2px 6px",
-  borderRadius: 999,
-};
-const badgeAlt: React.CSSProperties = {
-  ...badge,
-  background: "#eefdf6",
-  borderColor: "#10b981",
-};
-const meta: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  fontSize: 13,
-  color: "#6b7280",
-};
-const actions: React.CSSProperties = { display: "flex", gap: 8 };
-
+// local price formatter (kept from your version)
 const fmtNaira = (kobo?: number | null) =>
   typeof kobo === "number" && !Number.isNaN(kobo)
     ? `₦${(kobo / 100).toLocaleString()}`
     : "—";
 
-export default function ProductCard({ product, view = "grid" }: Props) {
+export default function ProductCard({ product, view = "grid", onAdd }: Props) {
   const list = view === "list";
+
   return (
-    <li style={{ ...cardBase, ...(list ? cardList : {}) }}>
-      <div>
+    <li
+      className={`${styles.card} ${list ? styles.list : ""}`}
+      data-testid="product-card"
+    >
+      <div className={styles.media}>
         <img
-          style={mediaImg}
           src={product.imageUrl || "https://picsum.photos/seed/x/640/480"}
           alt={product.name}
+          loading="lazy"
         />
       </div>
-      <div style={body}>
-        <h3 style={title}>{product.name}</h3>
-        <div style={badges}>
-          {product.stock > 0 && <span style={badge}>In Stock</span>}
-          {product.financingEligible && <span style={badgeAlt}>Financing</span>}
+
+      <div className={styles.body}>
+        <h3 className={styles.title}>{product.name}</h3>
+
+        <div className={styles.badges} aria-label="product badges">
+          {(product as any).stock > 0 && (
+            <span className={styles.badge}>In Stock</span>
+          )}
+          {product.financingEligible && (
+            <span className={`${styles.badge} ${styles.badgeAlt}`}>
+              Financing
+            </span>
+          )}
         </div>
-        <div style={meta}>
-          <span>{fmtNaira(product.priceKobo)}</span>
-          <span>Min. order: {product.minOrder || 1} unit</span>
+
+        <div className={styles.meta}>
+          <span className={styles.price}>{fmtNaira(product.priceKobo)}</span>
+          <span>Min. order: {(product as any).minOrder || 1} unit</span>
         </div>
-        <div style={actions}>
-          <button className="btn btn--primary btn-sm">Add</button>
-          <a className="btn btn--ghost btn-sm" href={`/p/${product.id}`}>
+
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className="btn btn--primary btn-sm"
+            onClick={() => onAdd?.(product)}
+            aria-label={`Add ${product.name} to cart`}
+          >
+            Add
+          </button>
+
+          <Link
+            className="btn btn--ghost btn-sm"
+            to={`/products/${product.id}`}
+            aria-label={`View ${product.name}`}
+          >
             View
-          </a>
+          </Link>
         </div>
       </div>
     </li>

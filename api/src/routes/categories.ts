@@ -1,11 +1,10 @@
 import { Router } from "express";
-import { Category } from "../models";
+import { CATEGORY_LIST } from "../constants/categories";
 
 const r = Router();
 
-r.get("/", async (_req, res) => {
-  const cats = await Category.findAll({ order: [["name", "ASC"]] });
-  res.json({ data: cats });
+r.get("/", (_req, res) => {
+  res.json({ data: CATEGORY_LIST });
 });
 
 export default r;

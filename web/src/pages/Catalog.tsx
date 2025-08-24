@@ -1,4 +1,4 @@
-// path: web/src/pages/Catalog.tsx
+// web/src/pages/Catalog.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -8,11 +8,17 @@ import {
   type ProductQuery,
 } from "../api";
 import ScopedStyles from "../components/ScopedStyles";
-import { fmtNaira } from "../components/SafePrice";
+import ProductCard from "../components/ProductCard";
+import ViewToggle from "../components/ViewToggle";
+import PriceRange from "../components/PriceRange";
 
 const SCOPE_ID = "catalog-root";
+const PRICE_MIN = 100_000;
+const PRICE_MAX = 10_000_000;
 
-/* ---------- tiny style helpers (consistent UI controls) ---------- */
+type Option = { id: string; name: string };
+
+/* ---------- tiny style helpers ---------- */
 const ui = {
   input: {
     width: "100%",
@@ -72,9 +78,9 @@ function useQueryState() {
 export default function CatalogPage() {
   const { params, set } = useQueryState();
 
-  // URL state
+  // URL state (category = NAME)
   const q = params.get("q") ?? "";
-  const categoryId = params.get("categoryId") ?? "";
+  const category = params.get("category") ?? ""; // name (e.g., "Batteries")
   const minPriceKobo = params.get("minPriceKobo") ?? "";
   const maxPriceKobo = params.get("maxPriceKobo") ?? "";
   const inStock = params.get("inStock") === "true";
@@ -91,22 +97,25 @@ export default function CatalogPage() {
     totalPages: number;
     total: number;
   }>();
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>(
-    []
-  );
+
+  // categories as objects
+  const [categories, setCategories] = useState<Option[]>([]);
+  const [catSel, setCatSel] = useState<string>(category); // selected NAME
+  useEffect(() => setCatSel(category), [category]);
 
   useEffect(() => {
     fetchCategories()
-      .then(setCategories)
+      .then(setCategories) // Option[]
       .catch(() => setCategories([]));
   }, []);
 
+  // fetch products (send category NAME)
   useEffect(() => {
     setLoading(true);
     setErr(null);
     fetchProducts({
       q: q || undefined,
-      categoryId: categoryId || undefined,
+      category: category || undefined, // send name
       minPriceKobo: minPriceKobo ? Number(minPriceKobo) : undefined,
       maxPriceKobo: maxPriceKobo ? Number(maxPriceKobo) : undefined,
       inStock: inStock || undefined,
@@ -126,7 +135,7 @@ export default function CatalogPage() {
       .finally(() => setLoading(false));
   }, [
     q,
-    categoryId,
+    category,
     minPriceKobo,
     maxPriceKobo,
     inStock,
@@ -142,16 +151,20 @@ export default function CatalogPage() {
     set({ q: String(fd.get("q") || ""), page: "1" });
   };
 
+  // apply category immediately (write ?category=<NAME>)
+  const onSelectCategory = (name: string) => {
+    setCatSel(name);
+    set({ category: name || undefined, page: "1" });
+  };
+
   const onApplyFilters = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const min = fd.get("min") ? Math.round(Number(fd.get("min")) * 100) : "";
     const max = fd.get("max") ? Math.round(Number(fd.get("max")) * 100) : "";
-    const category = String(fd.get("category") || "");
     const inS = fd.get("inStock") === "on" ? "true" : "";
     const fin = fd.get("financingEligible") === "on" ? "true" : "";
     set({
-      categoryId: category || undefined,
       minPriceKobo: min ? String(min) : undefined,
       maxPriceKobo: max ? String(max) : undefined,
       inStock: inS || undefined,
@@ -164,93 +177,108 @@ export default function CatalogPage() {
     <div id={SCOPE_ID}>
       <ScopedStyles scopeId={SCOPE_ID} />
 
-      {/* Top search (styled) */}
-      <form
-        className="search"
-        onSubmit={onSearchSubmit}
-        role="search"
-        aria-label="Product search"
-      >
-        <input
-          name="q"
-          defaultValue={q}
-          placeholder="Search products"
-          aria-label="Search products"
-          style={ui.input}
-        />
-        <button type="submit" style={ui.btn}>
-          Search
-        </button>
-      </form>
+      {/* Top search */}
+      <div style={{ maxWidth: 760 }}>
+        <form
+          className="search"
+          onSubmit={onSearchSubmit}
+          role="search"
+          aria-label="Product search"
+        >
+          <input
+            name="q"
+            defaultValue={q}
+            placeholder="Search products"
+            aria-label="Search products"
+            style={ui.input}
+          />
+          <button type="submit" style={ui.btn}>
+            Search
+          </button>
+        </form>
+      </div>
 
-      {/* Shell */}
       <div className="shell">
         {/* Sidebar / Filters */}
         <aside className="filters" aria-label="Filters">
-          <h2 style={{ margin: "0 0 8px 0", fontSize: 18 }}>Filters</h2>
+          <div
+            className="filters-head"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: 18 }}>Filters</h2>
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => {
+                set({
+                  q: q || undefined,
+                  category: undefined,
+                  minPriceKobo: undefined,
+                  maxPriceKobo: undefined,
+                  inStock: undefined,
+                  financingEligible: undefined,
+                  page: "1",
+                });
+                setCatSel("");
+              }}
+              style={{ height: 30, padding: "0 10px" }}
+            >
+              Clear Filters
+            </button>
+          </div>
 
           <form className="card" onSubmit={onApplyFilters}>
-            {/* Header row with Clear */}
-            <div className="row">
-              <button
-                type="button"
-                style={ui.btnGhost}
-                onClick={() =>
-                  set({
-                    q: q || undefined,
-                    categoryId: undefined,
-                    minPriceKobo: undefined,
-                    maxPriceKobo: undefined,
-                    inStock: undefined,
-                    financingEligible: undefined,
-                    page: "1",
-                  })
-                }
+            {/* Categories (radio list, auto-apply) */}
+            <div>
+              <div style={ui.section}>Categories</div>
+              <div
+                className="cat-list"
+                role="radiogroup"
+                aria-label="Categories"
               >
-                Clear
-              </button>
-            </div>
-
-            {/* Category */}
-            <label style={ui.label}>
-              Category
-              <select
-                name="category"
-                defaultValue={categoryId}
-                style={ui.select}
-              >
-                <option value="">All</option>
+                <label className="radio">
+                  <input
+                    type="radio"
+                    name="categoryRadios"
+                    checked={!catSel}
+                    onChange={() => onSelectCategory("")}
+                  />
+                  <span>All</span>
+                </label>
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
+                  <label key={c.id} className="radio">
+                    <input
+                      type="radio"
+                      name="categoryRadios"
+                      checked={catSel === c.name}
+                      onChange={() => onSelectCategory(c.name)}
+                    />
+                    <span style={{ textTransform: "uppercase" }}>{c.name}</span>
+                  </label>
                 ))}
-              </select>
-            </label>
+              </div>
+            </div>
 
             {/* Price */}
             <div>
               <div style={ui.section}>Price</div>
-              <div className="range">
-                <input
-                  name="min"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  placeholder="Min ₦"
-                  defaultValue={minPriceKobo ? Number(minPriceKobo) / 100 : ""}
-                  style={ui.input}
-                />
-                <input
-                  name="max"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  placeholder="Max ₦"
-                  defaultValue={maxPriceKobo ? Number(maxPriceKobo) / 100 : ""}
-                  style={ui.input}
-                />
-              </div>
+              <PriceRange
+                min={PRICE_MIN}
+                max={PRICE_MAX}
+                step={10_000}
+                defaultMin={
+                  minPriceKobo ? Number(minPriceKobo) / 100 : PRICE_MIN
+                }
+                defaultMax={
+                  maxPriceKobo ? Number(maxPriceKobo) / 100 : PRICE_MAX
+                }
+                nameMin="min"
+                nameMax="max"
+              />
             </div>
 
             {/* Toggles */}
@@ -275,24 +303,8 @@ export default function CatalogPage() {
 
         {/* Results */}
         <main>
-          {/* Toolbar */}
           <div className="toolbar" role="region" aria-label="View and sort">
-            <div className="tabs" role="tablist" aria-label="View">
-              <button
-                aria-selected={view === "grid"}
-                className={`tab ${view === "grid" ? "active" : ""}`}
-                onClick={() => set({ view: "grid" })}
-              >
-                Grid
-              </button>
-              <button
-                aria-selected={view === "list"}
-                className={`tab ${view === "list" ? "active" : ""}`}
-                onClick={() => set({ view: "list" })}
-              >
-                List
-              </button>
-            </div>
+            <ViewToggle />
             <label style={ui.label}>
               Sort by
               <select
@@ -308,57 +320,20 @@ export default function CatalogPage() {
             </label>
           </div>
 
-          {/* States */}
           {loading && <p>Loading products…</p>}
           {err && <p style={{ color: "crimson" }}>Error: {err}</p>}
           {!loading && !err && data && data.items.length === 0 && (
             <p>No products found.</p>
           )}
 
-          {/* Grid */}
           {!loading && !err && data && data.items.length > 0 && (
             <>
               <ul className={`grid ${view === "list" ? "list" : ""}`}>
                 {data.items.map((p) => (
-                  <li
-                    key={p.id}
-                    className={`card ${view === "list" ? "list" : ""}`}
-                  >
-                    <div className="media">
-                      <img
-                        src={
-                          p.imageUrl || "https://picsum.photos/seed/x/640/480"
-                        }
-                        alt={p.name}
-                      />
-                    </div>
-                    <div className="body">
-                      <h3 className="title">{p.name}</h3>
-                      <div className="badges">
-                        {p.stock > 0 && <span className="badge">In Stock</span>}
-                        {p.financingEligible && (
-                          <span className="badge alt">Financing</span>
-                        )}
-                      </div>
-                      <div className="meta">
-                        <span>{fmtNaira(p.priceKobo)}</span>
-                        <span>Min. order: {p.minOrder || 1} unit</span>
-                      </div>
-                      <div className="actions">
-                        <button className="btn btn--primary btn-sm">Add</button>
-                        <a
-                          className="btn btn--ghost btn-sm"
-                          href={`/p/${p.id}`}
-                        >
-                          View
-                        </a>
-                      </div>
-                    </div>
-                  </li>
+                  <ProductCard key={p.id} product={p} view={view} />
                 ))}
               </ul>
 
-              {/* Pagination */}
               <nav
                 className="pagination"
                 role="navigation"
