@@ -7,6 +7,9 @@ import {
 } from "sequelize";
 import { sequelize } from "../db";
 
+/* =========================
+   Category
+   ========================= */
 export class Category extends Model<
   InferAttributes<Category>,
   InferCreationAttributes<Category>
@@ -22,6 +25,9 @@ Category.init(
   { sequelize, tableName: "Categories", timestamps: true }
 );
 
+/* =========================
+   Product
+   ========================= */
 export class Product extends Model<
   InferAttributes<Product>,
   InferCreationAttributes<Product>
@@ -29,7 +35,7 @@ export class Product extends Model<
   declare id: CreationOptional<number>;
   declare name: string;
   declare description: string | null;
-  declare priceKobo: number; // <-- INT kobo
+  declare priceKobo: number; // stored in kobo
   declare stock: number;
   declare minOrder: number;
   declare brand: string | null;
@@ -44,7 +50,7 @@ Product.init(
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     name: { type: DataTypes.STRING, allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: true },
-    priceKobo: { type: DataTypes.INTEGER, allowNull: false }, // <-- align with routes/seed
+    priceKobo: { type: DataTypes.INTEGER, allowNull: false },
     stock: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     minOrder: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1 },
     brand: { type: DataTypes.STRING, allowNull: true },
@@ -61,6 +67,9 @@ Product.init(
   { sequelize, tableName: "Products", timestamps: true }
 );
 
+/* =========================
+   Order
+   ========================= */
 export class Order extends Model<
   InferAttributes<Order>,
   InferCreationAttributes<Order>
@@ -90,6 +99,9 @@ Order.init(
   { sequelize, tableName: "Orders", timestamps: true }
 );
 
+/* =========================
+   OrderItem
+   ========================= */
 export class OrderItem extends Model<
   InferAttributes<OrderItem>,
   InferCreationAttributes<OrderItem>
@@ -115,16 +127,34 @@ OrderItem.init(
   { sequelize, tableName: "OrderItems", timestamps: true }
 );
 
-// associations (optional for now)
-Category.hasMany(Product, { foreignKey: "categoryId" });
-Product.belongsTo(Category, { foreignKey: "categoryId" });
+/* =========================
+   Associations (single source of truth)
+   ========================= */
 
-Order.hasMany(OrderItem, { foreignKey: "orderId" });
-OrderItem.belongsTo(Order, { foreignKey: "orderId" });
+// Category ↔ Product
+Category.hasMany(Product, { foreignKey: "categoryId", as: "products" });
+Product.belongsTo(Category, { foreignKey: "categoryId", as: "categoryRef" });
 
-Product.hasMany(OrderItem, { foreignKey: "productId" });
-OrderItem.belongsTo(Product, { foreignKey: "productId" });
+// Order ↔ OrderItem
+Order.hasMany(OrderItem, {
+  foreignKey: "orderId",
+  as: "items", // ⚠ keep this alias — routes use include { as: "items" }
+  onDelete: "CASCADE",
+});
+OrderItem.belongsTo(Order, { foreignKey: "orderId", as: "order" });
+
+// Product ↔ OrderItem (optional but handy for admin)
+Product.hasMany(OrderItem, { foreignKey: "productId", as: "orderItems" });
+OrderItem.belongsTo(Product, { foreignKey: "productId", as: "product" });
+
+/* =========================
+   Utilities / Exports
+   ========================= */
 
 export async function syncAndSeed() {
-  await sequelize.sync({ alter: true }); // ok for dev
+  // ok for dev; use migrations in prod
+  await sequelize.sync({ alter: true });
 }
+
+// allow `import { sequelize, Order, OrderItem, Product } from "../models"`
+export { sequelize };

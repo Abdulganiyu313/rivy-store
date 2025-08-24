@@ -1,123 +1,150 @@
 import { Router } from "express";
-import { sequelize } from "../db";
-import { Product, Order, OrderItem } from "../models";
+import { sequelize, Product, Order, OrderItem } from "../models";
 import { validateCheckout } from "../validation/checkout";
 
-const IDEMPOTENCY = new Map<string, any>();
 const router = Router();
 
-router.post("/checkout", async (req, res, next) => {
-  const key = req.get("Idempotency-Key");
-  if (!key)
-    return res.status(400).json({ error: "Missing Idempotency-Key header" });
-
+/**
+ * POST /api/checkout
+ * Create an order and return { orderId }
+ */
+router.post("/checkout", async (req, res) => {
   try {
-    if (IDEMPOTENCY.has(key)) return res.json(IDEMPOTENCY.get(key));
+    const { customer, lines } = validateCheckout(req.body);
 
-    const parsed = validateCheckout(req.body);
+    // Load products for all line items
+    const ids = [...new Set(lines.map((l) => l.productId))];
+    const products = await Product.findAll({ where: { id: ids } });
 
-    const t = await sequelize.transaction();
+    // Map products by id for quick lookup
+    const byId = new Map<number, Product>(products.map((p) => [p.id, p]));
+
+    let subtotal = 0;
+    const items = lines.map((l) => {
+      const p = byId.get(l.productId);
+      if (!p) {
+        // consistent error format
+        throw new Error(`PRODUCT_NOT_FOUND:${l.productId}`);
+      }
+      const unit = typeof p.priceKobo === "number" ? p.priceKobo : 0;
+      subtotal += unit * l.qty;
+      return {
+        productId: p.id,
+        name: p.name,
+        unitPriceKobo: unit,
+        qty: l.qty,
+      };
+    });
+
+    const tax = Math.round(subtotal * 0.075);
+    const total = subtotal + tax;
+
+    // Transactional create
+    const tx = await sequelize.transaction();
     try {
-      // 1) Load & validate all products first; compute totals
-      const productMap = new Map<number, any>();
-      for (const line of parsed.lines) {
-        const p = await Product.findByPk(line.productId, {
-          transaction: t,
-          lock: t.LOCK.UPDATE,
-        });
-        if (!p) throw new Error("Product not found");
-
-        const minOrder = (p as any).minOrder ?? 1;
-        const stock = (p as any).stock ?? 0;
-
-        if (line.qty % minOrder !== 0)
-          throw new Error("Qty must be in minOrder increments");
-        if (line.qty > stock) throw new Error("Insufficient stock");
-
-        productMap.set(line.productId, p);
-      }
-
-      // 2) Compute subtotal/tax/total in KOBO
-      let subtotalKobo = 0;
-      const itemsPayload: Array<{
-        productId: number;
-        name: string;
-        unitPriceKobo: number;
-        qty: number;
-        subtotalKobo: number;
-      }> = [];
-
-      for (const line of parsed.lines) {
-        const p: any = productMap.get(line.productId);
-        const unitPriceKobo: number = p.priceKobo ?? 0;
-        const lineTotal = unitPriceKobo * line.qty;
-
-        subtotalKobo += lineTotal;
-        itemsPayload.push({
-          productId: p.id,
-          name: p.name,
-          unitPriceKobo,
-          qty: line.qty,
-          subtotalKobo: lineTotal,
-        });
-      }
-
-      const taxRate = 0.075;
-      const taxKobo = Math.round(subtotalKobo * taxRate);
-      const totalKobo = subtotalKobo + taxKobo;
-
-      // 3) Create order WITH required totals
       const order = await Order.create(
         {
           status: "placed",
-          subtotalKobo,
-          taxKobo,
-          totalKobo,
-          name: parsed.customer.name,
-          email: parsed.customer.email,
-          address: parsed.customer.address,
-          currency: "NGN",
+          subtotalKobo: subtotal,
+          taxKobo: tax,
+          totalKobo: total,
+          name: customer.name,
+          email: customer.email,
+          address: customer.address,
+          // currency: "NGN" // optional
         },
-        { transaction: t }
+        { transaction: tx }
       );
 
-      const orderId: number = (order as any).id ?? (order as any).get?.("id");
-
-      // 4) Create items + decrement stock
-      await OrderItem.bulkCreate(
-        itemsPayload.map((it) => ({
-          orderId,
-          productId: it.productId,
-          name: it.name,
-          unitPriceKobo: it.unitPriceKobo,
-          qty: it.qty,
-          subtotalKobo: it.subtotalKobo,
-        })),
-        { transaction: t }
-      );
-
-      for (const line of parsed.lines) {
-        const p: any = productMap.get(line.productId);
-        p.stock = (p.stock ?? 0) - line.qty;
-        await p.save({ transaction: t });
+      for (const it of items) {
+        await OrderItem.create(
+          {
+            orderId: order.id,
+            productId: it.productId,
+            name: it.name,
+            unitPriceKobo: it.unitPriceKobo,
+            qty: it.qty,
+            subtotalKobo: it.unitPriceKobo * it.qty,
+          },
+          { transaction: tx }
+        );
       }
 
-      const response = {
-        orderId,
-        items: itemsPayload,
-        totals: { subtotalKobo, taxKobo, totalKobo },
-      };
-
-      IDEMPOTENCY.set(key, response);
-      await t.commit();
-      res.json(response);
-    } catch (e) {
-      await t.rollback();
-      throw e;
+      await tx.commit();
+      // ✅ IMPORTANT: use .status(...).json(...), not res.status(201, {...})
+      return res.status(201).json({ orderId: String(order.id) });
+    } catch (err) {
+      await tx.rollback();
+      throw err;
     }
-  } catch (e) {
-    next(e);
+  } catch (e: any) {
+    // map known errors
+    if (
+      typeof e?.message === "string" &&
+      e.message.startsWith("PRODUCT_NOT_FOUND:")
+    ) {
+      const id = e.message.split(":")[1];
+      return res.status(400).json({
+        error: {
+          code: "PRODUCT_NOT_FOUND",
+          message: `Product ${id} not found`,
+        },
+      });
+    }
+    return res.status(400).json({
+      error: {
+        code: "BAD_REQUEST",
+        message: e?.message ?? "Invalid request",
+      },
+    });
   }
+});
+
+/**
+ * GET /api/orders
+ * Paginated list of orders
+ */
+router.get("/orders", async (req, res) => {
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+  const offset = (page - 1) * limit;
+
+  const { rows, count } = await Order.findAndCountAll({
+    attributes: [
+      "id",
+      "status",
+      "createdAt",
+      "subtotalKobo",
+      "taxKobo",
+      "totalKobo",
+      "name",
+    ],
+    order: [["createdAt", "DESC"]],
+    limit,
+    offset,
+  });
+
+  return res.json({
+    data: rows.map((r) => r.toJSON()),
+    total: count,
+    totalPages: Math.ceil(count / limit),
+  });
+});
+
+/**
+ * GET /api/orders/:id
+ * Single order with items
+ */
+router.get("/orders/:id", async (req, res) => {
+  const order = await Order.findByPk(req.params.id, {
+    include: [{ model: OrderItem, as: "items" }],
+  });
+  if (!order) {
+    return res
+      .status(404)
+      .json({ error: { code: "NOT_FOUND", message: "Order not found" } });
+  }
+  return res.json(order.toJSON());
 });
 
 export default router;

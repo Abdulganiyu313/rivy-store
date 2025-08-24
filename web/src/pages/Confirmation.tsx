@@ -1,241 +1,206 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+// web/src/pages/Confirmation.tsx
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import SafePrice from "../components/SafePrice";
-import styles from "./Confirmation.module.css";
-
-type OrderItem = {
-  productId: number;
-  name?: string;
-  priceKobo?: number | null;
-  qty: number;
-  imageUrl?: string | null;
-};
 
 type OrderSummary = {
-  id: string | number;
-  status?: string;
-  createdAt?: string;
-  subtotalKobo?: number | null;
-  taxKobo?: number | null;
-  totalKobo?: number | null;
-  items?: OrderItem[];
+  id: number;
+  status: string;
+  createdAt: string;
+  subtotalKobo: number;
+  taxKobo: number;
+  totalKobo: number;
+  name?: string | null;
 };
 
-async function fetchOrdersServer(): Promise<OrderSummary[]> {
-  const res = await fetch("/api/orders", {
-    credentials: "include",
-    headers: { Accept: "application/json" },
-  });
-  if (res.status === 404) return []; // backend not implemented in some envs
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
-}
+type OrdersResponse = {
+  data: OrderSummary[];
+  total: number;
+  totalPages: number;
+};
 
-function readOrdersLocal(): OrderSummary[] {
-  try {
-    const raw = localStorage.getItem("orders");
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-}
-
-function computeTotal(order: OrderSummary) {
-  const subtotal =
-    typeof order.subtotalKobo === "number"
-      ? order.subtotalKobo
-      : (order.items ?? []).reduce((sum, it) => {
-          const unit =
-            typeof it.priceKobo === "number" && !Number.isNaN(it.priceKobo)
-              ? it.priceKobo
-              : 0;
-          return sum + unit * (it.qty || 0);
-        }, 0);
-  const vat =
-    typeof order.taxKobo === "number"
-      ? order.taxKobo
-      : Math.round(subtotal * 0.075);
-  const total =
-    typeof order.totalKobo === "number" ? order.totalKobo : subtotal + vat;
-  return { subtotal, vat, total };
-}
-
-function copyOrderLink(id: string | number) {
-  const url = `${
-    window.location.origin
-  }/checkout-success?orderId=${encodeURIComponent(String(id))}`;
-  navigator.clipboard?.writeText(url).catch(() => {});
-}
-
-function exportOrdersJSON(orders: any[]) {
-  const blob = new Blob([JSON.stringify(orders, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "orders.json";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-export default function Confirmation() {
+export default function ConfirmationPage() {
   const nav = useNavigate();
-  const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [items, setItems] = useState<OrderSummary[]>([]);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    let mounted = true;
+    let alive = true;
     (async () => {
+      setLoading(true);
+      setErr(null);
       try {
-        setLoading(true);
-        setErr(null);
-        const server = await fetchOrdersServer().catch(() => []);
-        const local = readOrdersLocal();
-
-        // merge & de-dupe by id; prefer server records when both exist
-        const map = new Map<string, OrderSummary>();
-        for (const o of [...local, ...server]) {
-          map.set(String(o.id), o);
+        const res = await fetch("/api/orders");
+        // Fail fast on HTTP errors
+        if (!res.ok) {
+          let msg = res.statusText;
+          try {
+            const j = await res.json();
+            msg = j?.error?.message || msg;
+          } catch {
+            // ignore JSON parse errors (could be HTML)
+          }
+          throw new Error(msg || "Failed to load orders");
         }
-        const merged = Array.from(map.values());
 
-        // sort by createdAt desc (fallback: numeric id desc)
-        merged.sort((a, b) => {
-          const da = a.createdAt ? +new Date(a.createdAt) : NaN;
-          const db = b.createdAt ? +new Date(b.createdAt) : NaN;
-          if (!Number.isNaN(db) && !Number.isNaN(da)) return db - da;
-          const ia = Number(a.id);
-          const ib = Number(b.id);
-          return Number.isFinite(ib) && Number.isFinite(ia) ? ib - ia : 0;
-        });
+        const payload: unknown = await res.json();
 
-        if (mounted) setOrders(merged);
-      } catch (e: unknown) {
-        if (mounted)
-          setErr(e instanceof Error ? e.message : "Failed to load orders");
+        // Validate shape at runtime
+        const isValid =
+          payload &&
+          typeof payload === "object" &&
+          Array.isArray((payload as any).data);
+
+        if (!isValid) {
+          throw new Error("Invalid response from server");
+        }
+
+        const { data, total } = payload as OrdersResponse;
+        if (alive) {
+          setItems(data);
+          setTotal(total);
+        }
+      } catch (e: any) {
+        setErr(e?.message || "Something went wrong");
       } finally {
-        if (mounted) setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
     return () => {
-      mounted = false;
+      alive = false;
     };
   }, []);
 
-  const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) nav(-1);
-    else nav("/catalog");
-  };
+  const title = useMemo(() => "Orders", []);
+  const ordersCountLabel = useMemo(
+    () => `${total} ${total === 1 ? "order" : "orders"}`,
+    [total]
+  );
 
   return (
-    <div className="container">
-      <div className={styles.page}>
-        {/* Back */}
-        <div className={styles.backRow}>
-          <button
-            type="button"
-            onClick={handleBack}
-            aria-label="Back"
-            className={styles.backBtn}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M15 18l-6-6 6-6"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Back
-          </button>
-        </div>
+    <div className="container" style={{ padding: "24px 0" }}>
+      {/* Back */}
+      <button
+        type="button"
+        className="btn"
+        onClick={() => (window.history.length > 1 ? nav(-1) : nav("/catalog"))}
+        aria-label="Go back"
+        style={{ marginBottom: 16 }}
+      >
+        ← Back
+      </button>
 
-        <h1 style={{ marginTop: 0 }}>Orders</h1>
+      <h1 style={{ marginTop: 0 }}>{title}</h1>
 
-        {/* optional tools */}
-        <div className={styles.toolbar}>
-          <button
-            type="button"
-            className={styles.ghostSm}
-            onClick={() => exportOrdersJSON(orders)}
-            aria-label="Export orders JSON"
-          >
-            Export JSON
-          </button>
-        </div>
-
-        <section className={styles.panel} aria-label="Orders list">
-          <div className={styles.sectionHead}>
-            <strong>Recent Orders</strong>
-            <span className={styles.muted}>
-              {orders.length} {orders.length === 1 ? "order" : "orders"}
+      <div
+        className="card"
+        style={{
+          padding: 0,
+          border: "1px solid var(--border, #e5e7eb)",
+          borderRadius: 12,
+          overflow: "hidden",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            borderBottom: "1px solid var(--border, #e5e7eb)",
+          }}
+        >
+          <strong>Recent Orders</strong>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ color: "var(--muted, #6b7280)" }}>
+              {ordersCountLabel}
             </span>
+            <button
+              className="btn btn--ghost"
+              onClick={() => {
+                const blob = new Blob([JSON.stringify(items, null, 2)], {
+                  type: "application/json",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "orders.json";
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            >
+              Export JSON
+            </button>
           </div>
+        </div>
 
-          {loading && <div className={styles.pad}>Loading…</div>}
+        {/* Body */}
+        <div style={{ padding: 16 }}>
+          {loading && <div>Loading orders…</div>}
 
           {err && (
-            <div className={`${styles.pad} ${styles.error}`}>
-              {err}. Please try again shortly.
+            <div style={{ color: "crimson" }}>
+              {err} — please try again shortly.
             </div>
           )}
 
-          {!loading && !err && orders.length === 0 && (
-            <div className={styles.pad}>You don’t have any orders yet.</div>
+          {!loading && !err && items.length === 0 && (
+            <div style={{ color: "var(--muted, #6b7280)" }}>
+              You don’t have any orders yet.
+            </div>
           )}
 
-          {!loading &&
-            !err &&
-            orders.length > 0 &&
-            orders.map((o) => {
-              const d = o.createdAt ? new Date(o.createdAt) : null;
-              const { total } = computeTotal(o);
-              const orderHref = `/checkout-success?orderId=${encodeURIComponent(
-                String(o.id)
-              )}`;
-
-              return (
-                <div key={String(o.id)} className={styles.row}>
-                  <div className={styles.info}>
-                    <div className={styles.title}>
-                      <Link to={orderHref} aria-label={`Open order #${o.id}`}>
-                        Order #{o.id}
-                      </Link>
-                      {o.status ? (
-                        <span className={styles.pill}>{o.status}</span>
-                      ) : null}
-                    </div>
-                    <div className={styles.muted}>
-                      {d ? d.toLocaleString() : "—"}
+          {!loading && !err && items.length > 0 && (
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              {items.map((o) => (
+                <li
+                  key={o.id}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr auto",
+                    gap: 12,
+                    alignItems: "center",
+                    padding: "12px 0",
+                    borderBottom: "1px solid #f3f4f6",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600 }}>Order #{o.id}</div>
+                    <div style={{ color: "var(--muted, #6b7280)" }}>
+                      {new Date(o.createdAt).toLocaleString()}
                     </div>
                   </div>
-
-                  <div className={styles.total}>
-                    <SafePrice kobo={total} />
+                  <div>
+                    <div style={{ color: "var(--muted, #6b7280)" }}>Status</div>
+                    <strong>{o.status}</strong>
                   </div>
-
-                  <div className={styles.actions}>
+                  <div>
+                    <div style={{ color: "var(--muted, #6b7280)" }}>Total</div>
+                    <strong>
+                      <SafePrice kobo={o.totalKobo ?? 0} />
+                    </strong>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
                     <button
-                      type="button"
-                      className={styles.copyBtn}
-                      onClick={() => copyOrderLink(o.id)}
-                      aria-label={`Copy link to order #${o.id}`}
+                      className="btn primary"
+                      onClick={() =>
+                        nav(
+                          `/checkout-success?orderId=${encodeURIComponent(
+                            o.id
+                          )}`
+                        )
+                      }
                     >
-                      Copy link
-                    </button>
-                    <Link className={styles.viewBtn} to={orderHref}>
                       View
-                    </Link>
+                    </button>
                   </div>
-                </div>
-              );
-            })}
-        </section>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
