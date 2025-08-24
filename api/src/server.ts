@@ -4,6 +4,7 @@ import { sequelize } from "./db";
 import { syncAndSeed } from "./models";
 import ordersRouter from "./routes/orders";
 import { logger } from "./logger";
+import { mountOpenAPI } from "./openapi";
 
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -27,6 +28,8 @@ async function start() {
     }
 
     app.use("/api", ordersRouter);
+
+    mountOpenAPI(app);
 
     app.listen(PORT, () => {
       logger.info(`API on http://localhost:${PORT}`);

@@ -13,6 +13,8 @@ import openapi from "./docs/openapi.json";
 
 export const app = express();
 
+app.set("trust proxy", 1); // trust first proxy
+
 const origin = process.env.CORS_ORIGIN || "http://localhost:5173";
 app.use(
   cors({
@@ -48,4 +50,12 @@ app.use((err: any, _req: any, res: any, _next: any) => {
     .json({ error: { code: "SERVER_ERROR", message: "Unexpected error" } });
 });
 
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
 export default app;

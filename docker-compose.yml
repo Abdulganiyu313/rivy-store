@@ -1,43 +1,39 @@
 version: "3.9"
-
 services:
   db:
     image: postgres:15
     environment:
-      POSTGRES_USER: rivy
-      POSTGRES_PASSWORD: rivy
-      POSTGRES_DB: rivy_store
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rivy
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - dbdata:/var/lib/postgresql/data
 
   api:
     build: ./api
     environment:
-      DATABASE_URL: postgres://rivy:rivy@db:5432/rivy_store
-      DATABASE_SSL: "false"
-
-      DB_HOST: db
-      DB_USER: rivy
-      DB_PASS: rivy
-      DB_NAME: rivy_store
-      DB_PORT: 5432
+      DATABASE_URL: postgres://postgres:postgres@db:5432/rivy
+      PORT: 4000
+      WEB_ORIGIN: http://localhost:5173
       SEED: "true"
-    ports:
-      - "4000:4000"
     depends_on:
       - db
+    ports:
+      - "4000:4000"
 
   web:
     build: ./web
     environment:
-      # IMPORTANT: use the service name "api" (not localhost) inside Docker
-      VITE_API_URL: http://api:4000
+      VITE_API_BASE: http://localhost:4000
     ports:
       - "5173:5173"
+    command: ["npm", "run", "dev"]
+    volumes:
+      - ./web:/app
     depends_on:
       - api
 
 volumes:
-  pgdata:
+  dbdata:
