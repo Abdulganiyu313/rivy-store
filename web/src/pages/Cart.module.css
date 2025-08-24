@@ -1,0 +1,76 @@
+/* Primary + Ghost buttons (colored) */
+.primaryBtn {
+  height: 42px;
+  width: 100%;
+  border-radius: 12px;
+  background: var(--brand, #10b981) !important;
+  color: #fff !important;
+  border: 1px solid var(--brand, #10b981) !important;
+  font-weight: 700;
+  cursor: pointer;
+}
+.primaryBtn:hover {
+  filter: brightness(0.95);
+}
+.primaryBtn:focus-visible {
+  outline: 3px solid rgba(16, 185, 129, 0.35);
+  outline-offset: 2px;
+}
+
+.ghostBtn {
+  height: 42px;
+  width: 100%;
+  border-radius: 12px;
+  background: #fff !important;
+  color: var(--brand, #10b981) !important;
+  border: 1px solid var(--brand, #10b981) !important;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ghostBtn:hover {
+  background: rgba(16, 185, 129, 0.06);
+}
+.ghostBtn:focus-visible {
+  outline: 3px solid rgba(16, 185, 129, 0.25);
+  outline-offset: 2px;
+}
+
+/* Qty control */
+.qtyWrap {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  height: 36px;
+}
+.qtyBtn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #fff;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+.qtyBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.qtyVal {
+  min-width: 44px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Small helper */
+.muted {
+  color: var(--muted);
+}
+
+/* Responsive items grid tweak (optional) */
+@media (max-width: 860px) {
+  .itemsRow {
+    grid-template-columns: 1fr 90px 130px 110px !important; /* info | unit | qty | line */
+  }
+}

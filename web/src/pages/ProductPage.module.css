@@ -1,0 +1,99 @@
+.page {
+  padding: 24px 0;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--fg);
+  cursor: pointer;
+  transition: background 120ms ease, box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+.backBtn:hover {
+  background: #f9fafb;
+}
+.backBtn:active {
+  background: #f3f4f6;
+}
+.backIcon {
+  display: inline-block;
+  transform: translateY(0.5px);
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 900px) {
+  .shell {
+    grid-template-columns: 1.1fr 1fr;
+  }
+}
+
+.cardPad {
+  padding: 16px;
+}
+
+.media {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.title {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: clamp(22px, 3vw, 34px);
+  line-height: 1.15;
+}
+
+.priceRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0 12px;
+}
+
+.price {
+  font-size: 22px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.price * {
+  text-decoration: none !important; /* guard against global line-through */
+}
+
+.desc {
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.addBtn {
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-weight: 600;
+}

@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   useCallback,
   useEffect,
@@ -6,9 +6,11 @@ import React, {
   useRef,
   useState,
 } from "react";
+import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import styles from "./Toast.module.css";
-import { _registerNotifier, NotifierVariant } from "../hooks/useToast";
+import { _registerNotifier } from "../hooks/useToast";
+import type { NotifierVariant } from "../hooks/useToast";
 
 type ToastItem = { id: string; message: string; variant: NotifierVariant };
 type Ctx = { notify: (variant: NotifierVariant, message: string) => void };
@@ -17,7 +19,7 @@ export const ToastContext = createContext<Ctx | null>(null);
 
 const AUTO_DISMISS_MS = 2500;
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
+export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const timeouts = useRef<Record<string, number>>({});
 

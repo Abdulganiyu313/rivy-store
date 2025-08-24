@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchProduct, type Product } from "../api";
 import Loader from "../components/Loader";
@@ -6,6 +6,7 @@ import ErrorMessage from "../components/ErrorMessage";
 import SafePrice from "../components/SafePrice";
 import { useCartStore } from "../stores/useCart";
 import { toast } from "../hooks/useToast";
+import styles from "./ProductPage.module.css";
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,45 +44,62 @@ export default function ProductPage() {
   if (!p) return <Loader full />;
 
   return (
-    <div className="container" style={{ padding: "24px 0" }}>
-      <div style={{ marginBottom: 12 }}>
+    <div className={`container ${styles.page}`}>
+      <div className={styles.topBar}>
         <button
           type="button"
           onClick={handleBack}
           aria-label="Back to previous page"
-          style={{
-            padding: "6px 10px",
-            fontSize: 14,
-            borderRadius: 8,
-            border: "1px solid var(--border)",
-            background: "#fff",
-            cursor: "pointer",
-          }}
+          className={styles.backBtn}
         >
-          ← Back
+          <svg
+            className={styles.backIcon}
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              d="M15 18l-6-6 6-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Back
         </button>
       </div>
 
-      <div className="grid" style={{ gridTemplateColumns: "1fr", gap: 24 }}>
-        <div className="card" style={{ padding: 16 }}>
-          <img src={p.imageUrl || "/placeholder.png"} alt={p.name} />
+      <div className={`grid ${styles.shell}`}>
+        <div className={`card ${styles.cardPad}`}>
+          <img
+            className={styles.media}
+            src={p.imageUrl || "/placeholder.png"}
+            alt={p.name}
+          />
         </div>
-        <div className="card" style={{ padding: 16 }}>
-          <h1 style={{ marginTop: 0 }}>{p.name}</h1>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <strong style={{ fontSize: 20 }}>
+
+        <div className={`card ${styles.cardPad}`}>
+          <h1 className={styles.title}>{p.name}</h1>
+
+          <div className={styles.priceRow}>
+            <span className={styles.price}>
               <SafePrice kobo={p.priceKobo ?? 0} />
-            </strong>
+            </span>
             {p.financingEligible && (
               <span className="badge">Financing eligible</span>
             )}
           </div>
-          <p style={{ color: "var(--muted)" }}>
+
+          <p className={styles.desc}>
             {p.description || "No description provided."}
           </p>
-          <div style={{ display: "flex", gap: 8 }}>
+
+          <div className={styles.actions}>
             <button
-              className="btn primary"
+              className={`btn primary ${styles.addBtn}`}
               onClick={handleAdd}
               aria-label={`Add ${p.name} to cart`}
             >

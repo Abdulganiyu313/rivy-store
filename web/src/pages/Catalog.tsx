@@ -1,5 +1,6 @@
 // web/src/pages/Catalog.tsx
 import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties, FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   fetchProducts,
@@ -27,7 +28,7 @@ const ui = {
     borderRadius: 8,
     padding: "0 10px",
     outline: "none",
-  } as React.CSSProperties,
+  } as CSSProperties,
   select: {
     width: "100%",
     height: 38,
@@ -35,7 +36,7 @@ const ui = {
     borderRadius: 8,
     padding: "0 8px",
     background: "#fff",
-  } as React.CSSProperties,
+  } as CSSProperties,
   btn: {
     height: 38,
     borderRadius: 8,
@@ -44,7 +45,7 @@ const ui = {
     color: "#fff",
     padding: "0 12px",
     cursor: "pointer",
-  } as React.CSSProperties,
+  } as CSSProperties,
   btnGhost: {
     height: 32,
     borderRadius: 8,
@@ -53,9 +54,9 @@ const ui = {
     color: "#111827",
     padding: "0 10px",
     cursor: "pointer",
-  } as React.CSSProperties,
-  label: { display: "grid", gap: 6 } as React.CSSProperties,
-  section: { fontWeight: 600, marginBottom: 6 } as React.CSSProperties,
+  } as CSSProperties,
+  label: { display: "grid", gap: 6 } as CSSProperties,
+  section: { fontWeight: 600, marginBottom: 6 } as CSSProperties,
 };
 
 function useQueryState() {
@@ -78,9 +79,9 @@ function useQueryState() {
 export default function CatalogPage() {
   const { params, set } = useQueryState();
 
-  // URL state (category = NAME)
+  // URL state (categoryId = ID)
   const q = params.get("q") ?? "";
-  const category = params.get("category") ?? ""; // name (e.g., "Batteries")
+  const categoryId = params.get("categoryId") ?? ""; // ID from /api/categories
   const minPriceKobo = params.get("minPriceKobo") ?? "";
   const maxPriceKobo = params.get("maxPriceKobo") ?? "";
   const inStock = params.get("inStock") === "true";
@@ -100,8 +101,8 @@ export default function CatalogPage() {
 
   // categories as objects
   const [categories, setCategories] = useState<Option[]>([]);
-  const [catSel, setCatSel] = useState<string>(category); // selected NAME
-  useEffect(() => setCatSel(category), [category]);
+  const [catSel, setCatSel] = useState<string>(categoryId); // selected ID
+  useEffect(() => setCatSel(categoryId), [categoryId]);
 
   useEffect(() => {
     fetchCategories()
@@ -109,13 +110,13 @@ export default function CatalogPage() {
       .catch(() => setCategories([]));
   }, []);
 
-  // fetch products (send category NAME)
+  // fetch products (send categoryId)
   useEffect(() => {
     setLoading(true);
     setErr(null);
     fetchProducts({
       q: q || undefined,
-      category: category || undefined, // send name
+      categoryId: categoryId || undefined,
       minPriceKobo: minPriceKobo ? Number(minPriceKobo) : undefined,
       maxPriceKobo: maxPriceKobo ? Number(maxPriceKobo) : undefined,
       inStock: inStock || undefined,
@@ -135,7 +136,7 @@ export default function CatalogPage() {
       .finally(() => setLoading(false));
   }, [
     q,
-    category,
+    categoryId,
     minPriceKobo,
     maxPriceKobo,
     inStock,
@@ -145,19 +146,19 @@ export default function CatalogPage() {
     limit,
   ]);
 
-  const onSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const onSearchSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     set({ q: String(fd.get("q") || ""), page: "1" });
   };
 
-  // apply category immediately (write ?category=<NAME>)
-  const onSelectCategory = (name: string) => {
-    setCatSel(name);
-    set({ category: name || undefined, page: "1" });
+  // apply category immediately (write ?categoryId=<ID>)
+  const onSelectCategory = (id: string) => {
+    setCatSel(id);
+    set({ categoryId: id || undefined, page: "1" });
   };
 
-  const onApplyFilters = (e: React.FormEvent<HTMLFormElement>) => {
+  const onApplyFilters = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const min = fd.get("min") ? Math.round(Number(fd.get("min")) * 100) : "";
@@ -216,7 +217,7 @@ export default function CatalogPage() {
               onClick={() => {
                 set({
                   q: q || undefined,
-                  category: undefined,
+                  categoryId: undefined,
                   minPriceKobo: undefined,
                   maxPriceKobo: undefined,
                   inStock: undefined,
@@ -254,8 +255,8 @@ export default function CatalogPage() {
                     <input
                       type="radio"
                       name="categoryRadios"
-                      checked={catSel === c.name}
-                      onChange={() => onSelectCategory(c.name)}
+                      checked={catSel === c.id}
+                      onChange={() => onSelectCategory(c.id)}
                     />
                     <span style={{ textTransform: "uppercase" }}>{c.name}</span>
                   </label>

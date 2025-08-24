@@ -1,0 +1,145 @@
+.page {
+  padding: 24px 0;
+}
+
+/* Back */
+.backRow {
+  margin-bottom: 12px;
+}
+.backBtn {
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Panel */
+.panel {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.muted {
+  color: var(--muted);
+}
+.pad {
+  padding: 16px;
+}
+.error {
+  color: #b91c1c;
+}
+
+/* Rows */
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto auto; /* info | total | action */
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.row:last-child {
+  border-bottom: 0;
+}
+
+.info {
+  min-width: 0;
+}
+.title {
+  font-weight: 700;
+  margin: 0 0 2px;
+}
+.pill {
+  margin-left: 8px;
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+}
+
+.total {
+  justify-self: end;
+  font-weight: 700;
+}
+.actions {
+  justify-self: end;
+}
+
+/* Buttons */
+.viewBtn {
+  height: 36px;
+  border-radius: 10px;
+  padding: 0 12px;
+  border: 1px solid var(--brand, #10b981);
+  color: var(--brand, #10b981);
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
+}
+
+.copyBtn {
+  height: 36px;
+  border-radius: 10px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: #111827;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+/* Top toolbar */
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px 0;
+}
+.ghostSm,
+.filledSm {
+  height: 32px;
+  border-radius: 10px;
+  padding: 0 10px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+.ghostSm {
+  background: #fff;
+  border: 1px solid var(--border);
+  color: #111827;
+}
+.filledSm {
+  background: var(--brand, #10b981);
+  color: #fff;
+  border: none;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .total,
+  .actions {
+    justify-self: start;
+  }
+}
