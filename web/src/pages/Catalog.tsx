@@ -1,23 +1,19 @@
-// web/src/pages/Catalog.tsx
-import { useEffect, useMemo, useState } from "react";
-import type { CSSProperties, FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import {
-  fetchProducts,
-  fetchCategories,
-  type Product,
-  type ProductQuery,
-} from "../api";
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+} from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { fetchProducts, type Product, type ProductQuery } from "../api";
 import ScopedStyles from "../components/ScopedStyles";
 import ProductCard from "../components/ProductCard";
 import ViewToggle from "../components/ViewToggle";
-import PriceRange from "../components/PriceRange";
+import Hero from "../components/Hero";
+import SidebarFilters from "../components/SidebarFilters"; // ⬅ use the new sidebar
 
 const SCOPE_ID = "catalog-root";
-const PRICE_MIN = 100_000;
-const PRICE_MAX = 10_000_000;
-
-type Option = { id: string; name: string };
 
 /* ---------- tiny style helpers ---------- */
 const ui = {
@@ -29,14 +25,6 @@ const ui = {
     padding: "0 10px",
     outline: "none",
   } as CSSProperties,
-  select: {
-    width: "100%",
-    height: 38,
-    border: "1px solid #e5e7eb",
-    borderRadius: 8,
-    padding: "0 8px",
-    background: "#fff",
-  } as CSSProperties,
   btn: {
     height: 38,
     borderRadius: 8,
@@ -46,17 +34,6 @@ const ui = {
     padding: "0 12px",
     cursor: "pointer",
   } as CSSProperties,
-  btnGhost: {
-    height: 32,
-    borderRadius: 8,
-    border: "1px solid #e5e7eb",
-    background: "#fff",
-    color: "#111827",
-    padding: "0 10px",
-    cursor: "pointer",
-  } as CSSProperties,
-  label: { display: "grid", gap: 6 } as CSSProperties,
-  section: { fontWeight: 600, marginBottom: 6 } as CSSProperties,
 };
 
 function useQueryState() {
@@ -79,14 +56,14 @@ function useQueryState() {
 export default function CatalogPage() {
   const { params, set } = useQueryState();
 
-  // URL state (categoryId = ID)
+  // URL state
   const q = params.get("q") ?? "";
   const categoryId = params.get("categoryId") ?? ""; // ID from /api/categories
   const minPriceKobo = params.get("minPriceKobo") ?? "";
   const maxPriceKobo = params.get("maxPriceKobo") ?? "";
   const inStock = params.get("inStock") === "true";
   const financingEligible = params.get("financingEligible") === "true";
-  const sort = (params.get("sort") as ProductQuery["sort"]) || "relevance";
+  const sort = (params.get("sort") as ProductQuery["sort"]) || "relevance"; // UI removed, still supported
   const view = (params.get("view") as "grid" | "list") || "grid";
   const page = Number(params.get("page") || 1);
   const limit = Number(params.get("limit") || 12);
@@ -99,18 +76,7 @@ export default function CatalogPage() {
     total: number;
   }>();
 
-  // categories as objects
-  const [categories, setCategories] = useState<Option[]>([]);
-  const [catSel, setCatSel] = useState<string>(categoryId); // selected ID
-  useEffect(() => setCatSel(categoryId), [categoryId]);
-
-  useEffect(() => {
-    fetchCategories()
-      .then(setCategories) // Option[]
-      .catch(() => setCategories([]));
-  }, []);
-
-  // fetch products (send categoryId)
+  // fetch categories
   useEffect(() => {
     setLoading(true);
     setErr(null);
@@ -121,7 +87,7 @@ export default function CatalogPage() {
       maxPriceKobo: maxPriceKobo ? Number(maxPriceKobo) : undefined,
       inStock: inStock || undefined,
       financingEligible: financingEligible || undefined,
-      sort,
+      sort, // still passed, default 'relevance'
       page,
       limit,
     })
@@ -152,175 +118,67 @@ export default function CatalogPage() {
     set({ q: String(fd.get("q") || ""), page: "1" });
   };
 
-  // apply category immediately (write ?categoryId=<ID>)
-  const onSelectCategory = (id: string) => {
-    setCatSel(id);
-    set({ categoryId: id || undefined, page: "1" });
-  };
-
-  const onApplyFilters = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const min = fd.get("min") ? Math.round(Number(fd.get("min")) * 100) : "";
-    const max = fd.get("max") ? Math.round(Number(fd.get("max")) * 100) : "";
-    const inS = fd.get("inStock") === "on" ? "true" : "";
-    const fin = fd.get("financingEligible") === "on" ? "true" : "";
-    set({
-      minPriceKobo: min ? String(min) : undefined,
-      maxPriceKobo: max ? String(max) : undefined,
-      inStock: inS || undefined,
-      financingEligible: fin || undefined,
-      page: "1",
-    });
-  };
-
   return (
     <div id={SCOPE_ID}>
       <ScopedStyles scopeId={SCOPE_ID} />
 
-      {/* Top search */}
-      <div style={{ maxWidth: 760 }}>
-        <form
-          className="search"
-          onSubmit={onSearchSubmit}
-          role="search"
-          aria-label="Product search"
-        >
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="Search products"
-            aria-label="Search products"
-            style={ui.input}
-          />
-          <button type="submit" style={ui.btn}>
-            Search
-          </button>
-        </form>
-      </div>
+      {/* Hero */}
+      <Hero align="center" secondaryHref="/contact" />
 
+      {/* Shell: sidebar + results */}
       <div className="shell">
-        {/* Sidebar / Filters */}
+        {/* LEFT: Sidebar filters (CSS-module version) */}
         <aside className="filters" aria-label="Filters">
-          <div
-            className="filters-head"
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 18 }}>Filters</h2>
-            <button
-              type="button"
-              className="btn btn--ghost"
-              onClick={() => {
-                set({
-                  q: q || undefined,
-                  categoryId: undefined,
-                  minPriceKobo: undefined,
-                  maxPriceKobo: undefined,
-                  inStock: undefined,
-                  financingEligible: undefined,
-                  page: "1",
-                });
-                setCatSel("");
-              }}
-              style={{ height: 30, padding: "0 10px" }}
-            >
-              Clear Filters
-            </button>
-          </div>
-
-          <form className="card" onSubmit={onApplyFilters}>
-            {/* Categories (radio list, auto-apply) */}
-            <div>
-              <div style={ui.section}>Categories</div>
-              <div
-                className="cat-list"
-                role="radiogroup"
-                aria-label="Categories"
-              >
-                <label className="radio">
-                  <input
-                    type="radio"
-                    name="categoryRadios"
-                    checked={!catSel}
-                    onChange={() => onSelectCategory("")}
-                  />
-                  <span>All</span>
-                </label>
-                {categories.map((c) => (
-                  <label key={c.id} className="radio">
-                    <input
-                      type="radio"
-                      name="categoryRadios"
-                      checked={catSel === c.id}
-                      onChange={() => onSelectCategory(c.id)}
-                    />
-                    <span style={{ textTransform: "uppercase" }}>{c.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Price */}
-            <div>
-              <div style={ui.section}>Price</div>
-              <PriceRange
-                min={PRICE_MIN}
-                max={PRICE_MAX}
-                step={10_000}
-                defaultMin={
-                  minPriceKobo ? Number(minPriceKobo) / 100 : PRICE_MIN
-                }
-                defaultMax={
-                  maxPriceKobo ? Number(maxPriceKobo) / 100 : PRICE_MAX
-                }
-                nameMin="min"
-                nameMax="max"
-              />
-            </div>
-
-            {/* Toggles */}
-            <label className="checkbox">
-              <input name="inStock" type="checkbox" defaultChecked={inStock} />
-              <span>In stock</span>
-            </label>
-            <label className="checkbox">
-              <input
-                name="financingEligible"
-                type="checkbox"
-                defaultChecked={financingEligible}
-              />
-              <span>Financing eligible</span>
-            </label>
-
-            <button type="submit" style={{ ...ui.btn, width: "100%" }}>
-              Apply Filters
-            </button>
-          </form>
+          <SidebarFilters />
         </aside>
 
-        {/* Results */}
-        <main>
-          <div className="toolbar" role="region" aria-label="View and sort">
-            <ViewToggle />
-            <label style={ui.label}>
-              Sort by
-              <select
-                value={sort}
-                onChange={(e) => set({ sort: e.target.value, page: "1" })}
-                style={ui.select}
-              >
-                <option value="relevance">Relevance</option>
-                <option value="price_asc">Price ↑</option>
-                <option value="price_desc">Price ↓</option>
-                <option value="newest">Newest</option>
-              </select>
-            </label>
+        {/* RIGHT: Results */}
+        <main id="catalog">
+          {/* Top toolbar: search on the LEFT, grid/list on the RIGHT */}
+          <div
+            className="toolbar"
+            role="region"
+            aria-label="Search and view"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+              marginBottom: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            {/* Search (moved here) */}
+            <form
+              onSubmit={onSearchSubmit}
+              role="search"
+              aria-label="Product search"
+              style={{
+                display: "flex",
+                gap: 8,
+                flex: "1 1 520px",
+                maxWidth: 760,
+              }}
+            >
+              <input
+                name="q"
+                defaultValue={q}
+                placeholder="Search products"
+                aria-label="Search products"
+                style={ui.input}
+              />
+              <button type="submit" style={ui.btn}>
+                Search
+              </button>
+            </form>
+
+            {/* Grid/List (moved to top-right) */}
+            <div style={{ flex: "0 0 auto" }}>
+              <ViewToggle />
+            </div>
           </div>
 
+          {/* Results + states */}
           {loading && <p>Loading products…</p>}
           {err && <p style={{ color: "crimson" }}>Error: {err}</p>}
           {!loading && !err && data && data.items.length === 0 && (
@@ -335,6 +193,7 @@ export default function CatalogPage() {
                 ))}
               </ul>
 
+              {/* Pagination */}
               <nav
                 className="pagination"
                 role="navigation"

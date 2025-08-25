@@ -15,10 +15,33 @@ const fmtNaira = (kobo?: number | null) =>
     ? `₦${(kobo / 100).toLocaleString()}`
     : "—";
 
+/** Deterministic seed from id */
+function seedFrom(str: string): number {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = (h << 5) + h + str.charCodeAt(i);
+  return h >>> 0;
+}
+function mulberry32(seed: number) {
+  return () => {
+    let t = (seed += 0x6d2b79f5);
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 export default function ProductCard({ product, view = "grid", onAdd }: Props) {
   const list = view === "list";
   const descId = `pdesc-${product.id}`;
   const add = useCartStore((s) => s.add);
+
+  // deterministic “random” payment type; stock from product
+  const idSeed = seedFrom(String((product as any)?.id ?? product.name ?? ""));
+  const rand = mulberry32(idSeed);
+  const paymentType: "Instalmental" | "Full payment" =
+    rand() < 0.5 ? "Instalmental" : "Full payment";
+
+  const inStock = Number((product as any).stock ?? 0) > 0;
 
   const handleAdd = () => {
     if (onAdd) {
@@ -47,12 +70,21 @@ export default function ProductCard({ product, view = "grid", onAdd }: Props) {
         <h3 className={styles.title}>{product.name}</h3>
 
         <div className={styles.badges} aria-label="product badges">
-          {(product as any).stock > 0 && (
-            <span className={styles.badge}>In Stock</span>
-          )}
-          {product.financingEligible && (
-            <span className={`${styles.badge} ${styles.badgeAlt}`}>
-              Financing
+          {/* Payment type */}
+          <span
+            className={`${styles.badge} ${styles.badgeSolid}`}
+            aria-label={`${paymentType} payment type`}
+          >
+            {paymentType}
+          </span>
+
+          {/* In stock (only if true) */}
+          {inStock && (
+            <span
+              className={`${styles.badge} ${styles.badgeSolid}`}
+              aria-label="In Stock"
+            >
+              In Stock
             </span>
           )}
         </div>

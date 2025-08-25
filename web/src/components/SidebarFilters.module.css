@@ -1,0 +1,287 @@
+/* SidebarFilters.module.css */
+/* Uses your tokens when present: --bg, --fg, --muted, --border, --brand */
+
+.aside {
+  background: var(--bg, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--fg, #111827);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  margin-bottom: 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Segmented control */
+.segmented {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 12px;
+  padding: 6px;
+  margin-bottom: 16px;
+}
+
+.segment {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+.segment:hover {
+  background: #f7fafc;
+}
+.segment[data-active] {
+  background: var(--brand, #10b981);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+/* Blocks */
+.block {
+  padding: 14px 0;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+.block:first-of-type {
+  border-top: none;
+}
+.blockHead {
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.blockRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+/* Radio list */
+.radioGroup {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.radioLabel {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.radioLabel input[type="radio"] {
+  accent-color: var(--brand, #10b981);
+  width: 18px;
+  height: 18px;
+}
+
+/* Two-column grid fields */
+.grid2 {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 480px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+  margin-bottom: 6px;
+}
+.select {
+  width: 100%;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  color: inherit;
+}
+
+/* Price Range */
+.rangeValue {
+  font-size: 13px;
+  color: var(--muted, #6b7280);
+}
+
+.rangeWrap {
+  position: relative;
+  height: 28px;
+  margin: 6px 0 6px;
+}
+
+/* The highlight between the two thumbs */
+.rangeTrack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 12px;
+  height: 4px;
+  background: var(--brand, #10b981);
+  border-radius: 999px;
+  z-index: 0;
+}
+
+/* Thumbs: use two overlapping inputs */
+.range {
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  background: transparent;
+  pointer-events: none; /* let only thumbs be interactive */
+  z-index: 2;
+}
+
+/* Base track line (underlay) */
+.range::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 12px;
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  z-index: -1;
+}
+
+/* WebKit thumb */
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--brand, #10b981);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.range:focus-visible::-webkit-slider-thumb {
+  outline: 3px solid #fff;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.45);
+}
+
+/* Firefox thumb */
+.range::-moz-range-thumb {
+  appearance: none;
+  pointer-events: auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--brand, #10b981);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.range:focus-visible::-moz-range-thumb {
+  outline: 3px solid #fff;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.45);
+}
+
+/* Price hints under slider */
+.priceHints {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+}
+.muted {
+  color: var(--muted, #6b7280);
+  font-size: 12px;
+}
+
+/* Row buttons (accordion-like) */
+.rowButton {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--border, #e5e7eb);
+  padding: 14px 0;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+.rowButton:hover {
+  background: #fafafa;
+}
+.chev {
+  font-size: 18px;
+  color: var(--muted, #6b7280);
+}
+
+/* Collapsible container */
+.collapse {
+  display: none;
+  padding: 8px 0 14px;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+.collapse[data-open] {
+  display: block;
+}
+
+/* Actions */
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btnReset,
+.btnApply {
+  -webkit-tap-highlight-color: transparent;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  border: 1px solid var(--border, #e5e7eb);
+  background: #fff;
+  cursor: pointer;
+}
+.btnReset:hover {
+  background: #fafafa;
+}
+.btnApply {
+  background: var(--brand, #10b981);
+  color: #fff;
+  border-color: var(--brand, #10b981);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+.btnApply:hover {
+  filter: brightness(0.98);
+}
+.btnApply:active {
+  filter: brightness(0.96);
+}

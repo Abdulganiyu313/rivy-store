@@ -19,7 +19,7 @@ export default function Footer() {
           <span>
             Read our <Link to="/terms">Terms Policy</Link> –{" "}
             <Link to="/privacy">Privacy Policy</Link> –{" "}
-            <Link to="/faqs">FAQs</Link>
+            <Link to="/contact#faqs">FAQs</Link>
           </span>
         </div>
       </div>

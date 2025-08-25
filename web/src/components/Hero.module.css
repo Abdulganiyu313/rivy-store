@@ -1,0 +1,210 @@
+.hero {
+  /* Full-bleed trick even if placed inside a centered container */
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+
+  position: relative;
+  /* Stable height = no layout shift */
+  min-height: 260px;
+  display: grid;
+  align-items: stretch;
+  isolation: isolate;
+  margin-bottom: 28px;
+}
+
+@media (min-width: 768px) {
+  .hero {
+    min-height: 480px;
+    margin-bottom: 40px;
+  }
+}
+@media (min-width: 1024px) {
+  .hero {
+    min-height: 560px; /* ~420–560px desktop target */
+    margin-bottom: 48px;
+  }
+}
+
+/* Media layer (image + gradient + shimmer while loading) */
+.media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;
+  background: #0b1520; /* fallback while image loads */
+}
+
+/* Lightweight shimmer placeholder before image onLoad */
+.media::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: heroShimmer 1.6s linear infinite;
+  opacity: 1;
+  transition: opacity 300ms ease;
+}
+
+@keyframes heroShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: 0% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media::before {
+    animation: none;
+  }
+}
+
+/* Hide shimmer once image has loaded */
+.media[data-loaded="true"]::before {
+  opacity: 0;
+}
+
+.bgImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  filter: saturate(1.05) contrast(1.02);
+}
+
+/* Legibility overlay */
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    140deg,
+    rgba(0, 0, 0, 0.55) 0%,
+    rgba(0, 0, 0, 0.45) 35%,
+    rgba(0, 0, 0, 0.35) 100%
+  );
+}
+
+/* Content container with max width */
+.inner {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  /* breathing room */
+  padding: 24px 16px;
+  display: grid;
+  align-items: center;
+}
+
+/* Stack the text/buttons, center on mobile, left on desktop */
+.content {
+  display: grid;
+  gap: 14px;
+  color: #ffffff;
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .inner {
+    padding: 40px 24px;
+  }
+  .content {
+    max-width: 720px;
+  }
+}
+
+.headline {
+  margin: 0;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-size: clamp(24px, 5vw, 44px);
+  text-wrap: balance;
+}
+
+.subheading {
+  margin: 0;
+  line-height: 1.5;
+  font-size: clamp(14px, 2.2vw, 18px);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* CTA row */
+.ctas {
+  margin-top: 8px;
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 12px;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .ctas {
+    justify-content: start;
+  }
+}
+
+/* Buttons */
+.primaryCta,
+.secondaryCta {
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+  border-radius: 9999px;
+  padding: 12px 18px;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  border: 1.5px solid transparent;
+  outline: none;
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease,
+    border-color 120ms ease, color 120ms ease;
+}
+
+/* Primary (brand) */
+.primaryCta {
+  background: var(--brand, #10b981);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+}
+.primaryCta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.45);
+}
+.primaryCta:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+}
+
+/* Secondary (ghost) */
+.secondaryCta {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(6px);
+}
+.secondaryCta:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Focus styles (visible + high contrast) */
+.primaryCta:focus-visible,
+.secondaryCta:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.55), 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+.content[data-align="left"] {
+  text-align: left;
+}
+.content[data-align="center"] {
+  text-align: left;
+}

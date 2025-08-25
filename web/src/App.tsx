@@ -4,6 +4,7 @@ import { ToastProvider } from "./components/ToastProvider";
 import Header from "./components/Header";
 import Loader from "./components/Loader";
 import Footer from "./components/Footer";
+import ContactPage from "./pages/Contact";
 
 const Catalog = lazy(() => import("./pages/Catalog"));
 const Product = lazy(() => import("./pages/Product"));
@@ -23,6 +24,7 @@ export default function App() {
     { path: "/checkout-success", element: <CheckoutSuccess /> },
     { path: "/login", element: <Login /> },
     { path: "/signup", element: <Signup /> },
+    { path: "/contact", element: <ContactPage /> },
     {
       path: "*",
       element: (
