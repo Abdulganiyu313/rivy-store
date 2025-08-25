@@ -1,4 +1,3 @@
-// web/src/components/SidebarFilters.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { fetchProducts, type Product } from "../api";

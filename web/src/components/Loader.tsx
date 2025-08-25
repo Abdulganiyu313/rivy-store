@@ -1,4 +1,3 @@
-// web/src/components/Loader.tsx
 export default function Loader({ full = false }: { full?: boolean }) {
   return (
     <div

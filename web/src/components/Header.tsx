@@ -40,7 +40,6 @@ export default function Header() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
-  // tolerant cart count (works with any persisted shape)
   const count = useCartStore((s: any) => {
     if (Array.isArray(s?.items)) {
       return s.items.reduce(
@@ -67,7 +66,9 @@ export default function Header() {
           </span>
           <span className="brand__stack">
             <span className="brand__name">energystack</span>
-            <span className="brand__by">by rivy</span>
+            <span className="brand__by">
+              <em>by rivy</em>
+            </span>
           </span>
         </Link>
 

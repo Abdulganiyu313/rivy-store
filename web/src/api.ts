@@ -1,5 +1,3 @@
-// web/src/api.ts
-
 // ========= Types =========
 export type Product = {
   id: number;

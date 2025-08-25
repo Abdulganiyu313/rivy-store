@@ -46,7 +46,7 @@ export default function ScopedStyles({ scopeId }: Props) {
 #${scopeId} .radio span { font-weight:600 !important; color:#111827 !important; }
 `;
     const attr = `scoped-${scopeId}`;
-    // Reuse if it exists to avoid duplicates on re-render
+
     let style = document.querySelector<HTMLStyleElement>(
       `style[data-scoped="${attr}"]`
     );

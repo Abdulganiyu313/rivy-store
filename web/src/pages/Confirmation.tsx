@@ -1,4 +1,3 @@
-// web/src/pages/Confirmation.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SafePrice from "../components/SafePrice";

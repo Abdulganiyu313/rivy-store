@@ -2,24 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import styles from "./Hero.module.css";
 
-/**
- * Hero banner with local <picture> (WebP + JPG) by default.
- * To use a remote image instead, pass `remoteImageUrl`.
- *
- * Put `hero.webp` and `hero.jpg` in /public (e.g. web/public/hero.webp).
- */
 type HeroProps = {
   headline?: string;
   subheading?: string;
-  /** Primary CTA target. Defaults to "#catalog" (scrolls to results). */
   primaryHref?: string;
-  /** Secondary CTA target. Defaults to "/catalog#contact". */
   secondaryHref?: string;
-  /** If provided, uses this remote URL instead of local /hero.webp|.jpg */
   remoteImageUrl?: string;
-  /** Alt text for the background image (always required for accessibility). */
   alt?: string;
-  /** If you want to defer image load (default eager for better LCP) */
   eager?: boolean;
   useLocalWebP?: boolean;
   imageDir?: string;

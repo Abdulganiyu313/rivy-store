@@ -8,7 +8,7 @@ export default function Footer() {
     <footer className="site-footer" role="contentinfo">
       <div className="container site-footer__inner">
         <div className="site-footer__copy">
-          ©{year} Abdulganiyu. All rights reserved.
+          ©{year} Energystack. All rights reserved.
           {version ? ` v${version}` : ""}
         </div>
 

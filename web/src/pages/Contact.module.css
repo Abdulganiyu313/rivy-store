@@ -1,9 +1,7 @@
-/* Uses your tokens when present: --brand, --border, --muted, --text */
 .page {
   color: var(--text, #0f172a);
 }
 
-/* Header without fallback color; stable height + shimmer */
 .header {
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);

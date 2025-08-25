@@ -1,6 +1,3 @@
-/* SidebarFilters.module.css */
-/* Uses your tokens when present: --bg, --fg, --muted, --border, --brand */
-
 .aside {
   background: var(--bg, #fff);
   border: 1px solid var(--border, #e5e7eb);

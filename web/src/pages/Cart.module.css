@@ -1,4 +1,3 @@
-/* Primary + Ghost buttons (colored) */
 .primaryBtn {
   height: 42px;
   width: 100%;
@@ -68,7 +67,6 @@
   color: var(--muted);
 }
 
-/* Responsive items grid tweak (optional) */
 @media (max-width: 860px) {
   .itemsRow {
     grid-template-columns: 1fr 90px 130px 110px !important; /* info | unit | qty | line */

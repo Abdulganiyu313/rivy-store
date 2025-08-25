@@ -318,10 +318,7 @@ export default function ContactPage() {
                     ? "Sending..."
                     : "Request consultation"}
                 </button>
-                <a
-                  href="mailto:hello@energystack.example"
-                  className={styles.btnGhost}
-                >
+                <a href="mailto:hello@rivy.co" className={styles.btnGhost}>
                   Email us instead
                 </a>
               </div>

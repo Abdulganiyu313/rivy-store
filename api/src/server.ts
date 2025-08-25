@@ -5,8 +5,12 @@ import { syncAndSeed } from "./models";
 import ordersRouter from "./routes/orders";
 import { logger } from "./logger";
 import { mountOpenAPI } from "./openapi";
+import http from "http";
 
 const PORT = Number(process.env.PORT) || 4000;
+const HOST = process.env.HOST || "0.0.0.0";
+const IS_PROD = process.env.NODE_ENV === "production";
+const SHOULD_SEED = process.env.SEED === "true" && !IS_PROD; // never seed automatically in prod
 
 function errToString(e: unknown) {
   if (e instanceof Error) return e.stack || e.message;
@@ -22,18 +26,38 @@ async function start() {
     await sequelize.authenticate();
     logger.info("[db] connected");
 
-    if (process.env.SEED !== "false") {
+    if (SHOULD_SEED) {
       await syncAndSeed();
-      logger.info("[db] synced (alter=true)");
+      logger.info("[db] synced & seeded (dev)");
     }
 
-    app.use("/api", ordersRouter);
+    app.get("/healthz", (_req, res) =>
+      res.status(200).json({ ok: true, uptime: process.uptime() })
+    );
 
     mountOpenAPI(app);
 
-    app.listen(PORT, () => {
-      logger.info(`API on http://localhost:${PORT}`);
+    // Start HTTP server (keep reference for graceful shutdown)
+    const server = http.createServer(app);
+    server.listen(PORT, HOST, () => {
+      logger.info(`API listening on http://${HOST}:${PORT}`);
     });
+
+    // Graceful shutdown
+    const shutdown = (signal: string) => async () => {
+      try {
+        logger.warn(`[api] received ${signal}, shutting down...`);
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+        await sequelize.close();
+        logger.info("[api] shutdown complete");
+        process.exit(0);
+      } catch (err) {
+        logger.error(`[api] shutdown error: ${errToString(err)}`);
+        process.exit(1);
+      }
+    };
+    process.on("SIGTERM", shutdown("SIGTERM"));
+    process.on("SIGINT", shutdown("SIGINT"));
   } catch (err) {
     logger.error(`[api] startup failed: ${errToString(err)}`);
     process.exit(1);
@@ -42,6 +66,11 @@ async function start() {
 
 process.on("unhandledRejection", (err) => {
   logger.error(`[api] unhandledRejection: ${errToString(err)}`);
+});
+
+process.on("uncaughtException", (err) => {
+  logger.error(`[api] uncaughtException: ${errToString(err)}`);
+  process.exit(1);
 });
 
 start();

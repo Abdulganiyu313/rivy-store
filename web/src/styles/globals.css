@@ -1,0 +1,28 @@
+:root {
+  /* one token you can reuse anywhere */
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+}
+html,
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "ss01" on, "cv05" on; /* optional Inter niceties */
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.01em;
+}
+
+:root {
+  font-variant-numeric: tabular-nums;
+}
+
+:root {
+  --font-display: var(--font-sans); /* swap to another family anytime */
+}

@@ -35,7 +35,6 @@ export default function ProductCard({ product, view = "grid", onAdd }: Props) {
   const descId = `pdesc-${product.id}`;
   const add = useCartStore((s) => s.add);
 
-  // deterministic “random” payment type; stock from product
   const idSeed = seedFrom(String((product as any)?.id ?? product.name ?? ""));
   const rand = mulberry32(idSeed);
   const paymentType: "Instalmental" | "Full payment" =

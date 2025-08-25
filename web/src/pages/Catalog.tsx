@@ -15,7 +15,7 @@ import SidebarFilters from "../components/SidebarFilters"; // ⬅ use the new si
 
 const SCOPE_ID = "catalog-root";
 
-/* ---------- tiny style helpers ---------- */
+/* ---------- style helpers ---------- */
 const ui = {
   input: {
     width: "100%",
