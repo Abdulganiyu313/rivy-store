@@ -1,4 +1,3 @@
-// api/src/constants/categories.ts
 export const CATEGORY_LIST = [
   "Batteries",
   "Inverters",
@@ -10,7 +9,6 @@ export const CATEGORY_LIST = [
 
 export type Category = (typeof CATEGORY_LIST)[number];
 
-// Optional helper: ensure incoming values match exactly one of the allowed strings.
 export function isCategory(x: string | null | undefined): x is Category {
   return !!x && CATEGORY_LIST.includes(x as Category);
 }

@@ -51,7 +51,6 @@ router.post("/checkout", async (req, res) => {
           name: customer.name,
           email: customer.email,
           address: customer.address,
-          // currency: "NGN" // optional
         },
         { transaction: tx }
       );
@@ -71,7 +70,7 @@ router.post("/checkout", async (req, res) => {
       }
 
       await tx.commit();
-      // ✅ IMPORTANT: use .status(...).json(...), not res.status(201, {...})
+
       return res.status(201).json({ orderId: String(order.id) });
     } catch (err) {
       await tx.rollback();

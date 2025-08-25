@@ -1,4 +1,3 @@
-// api/src/routes/products.ts
 import { Router, Request, Response } from "express";
 import { Op, WhereOptions, literal, fn, col } from "sequelize";
 import { z } from "zod";
@@ -7,11 +6,6 @@ import { CATEGORY_LIST, isCategory } from "../constants/categories";
 
 const router = Router();
 
-/**
- * Validation for query parameters
- * - Accepts your fixed category names exactly (enum)
- * - Supports search, price range (kobo), stock, financing, pagination, and sort
- */
 const QuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   category: z
@@ -69,7 +63,7 @@ router.get("/", async (req: Request, res: Response) => {
   if (typeof financingEligible === "boolean")
     Object.assign(where, { financingEligible });
 
-  // Category filter (exact match from fixed list)
+  // Category filter
   if (category && isCategory(category)) {
     Object.assign(where, { category });
   }
@@ -105,10 +99,6 @@ router.get("/", async (req: Request, res: Response) => {
   });
 });
 
-/**
- * GET /products/brands
- * Optional helper: returns distinct brand list for filters
- */
 router.get("/brands", async (_req, res) => {
   const rows = await Product.findAll({
     attributes: [[fn("DISTINCT", col("brand")), "brand"]],
@@ -119,9 +109,6 @@ router.get("/brands", async (_req, res) => {
   res.json(rows.map((r: any) => r.brand).filter(Boolean));
 });
 
-/**
- * GET /products/:id
- */
 router.get("/:id", async (req, res) => {
   const p = await Product.findByPk(req.params.id);
   if (!p) return res.status(404).json({ message: "Product not found" });

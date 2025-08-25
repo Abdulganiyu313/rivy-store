@@ -19,9 +19,7 @@ module.exports = {
         );
       }
 
-      // If legacy 'price' exists, backfill priceKobo then drop price
       if (table.price) {
-        // If 'price' stored as naira, multiply by 100. If it was already kobo-sized, keep as-is.
         await queryInterface.sequelize.query(
           `
           UPDATE "Products"
@@ -62,7 +60,6 @@ module.exports = {
         .describeTable("Products")
         .catch(() => ({}));
       if (table.priceKobo) {
-        // (Optional) recreate 'price' if you want full rollback. Usually not needed.
         await queryInterface.removeColumn("Products", "priceKobo", {
           transaction: t,
         });

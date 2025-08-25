@@ -40,7 +40,7 @@ export function validateCheckout(body: unknown): CheckoutInput {
   const customer =
     parsed.customer ??
     ({
-      // default guest (front-end can pass real values later)
+      // default guest customer
       name: "Guest",
       email: "guest@example.com",
       address: "Unknown address",

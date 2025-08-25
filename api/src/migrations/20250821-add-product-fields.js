@@ -24,7 +24,7 @@ module.exports = {
       type: Sequelize.TEXT,
       allowNull: true,
     });
-    // optional: array of URLs if you want a small gallery
+
     await queryInterface.addColumn("Products", "images", {
       type: Sequelize.JSONB, // store as ["url1", "url2"]
       allowNull: true,

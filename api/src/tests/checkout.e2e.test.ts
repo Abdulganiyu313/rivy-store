@@ -4,7 +4,6 @@ const BASE = process.env.API_BASE || "http://localhost:4000";
 
 describe("checkout flow", () => {
   it("creates an order (201)", async () => {
-    // Product 1 should exist from your seed; if not, adjust to an existing ID
     const payload = {
       customer: {
         name: "Test User",

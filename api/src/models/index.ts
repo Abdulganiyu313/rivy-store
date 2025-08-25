@@ -152,9 +152,7 @@ OrderItem.belongsTo(Product, { foreignKey: "productId", as: "product" });
    ========================= */
 
 export async function syncAndSeed() {
-  // ok for dev; use migrations in prod
   await sequelize.sync({ alter: true });
 }
 
-// allow `import { sequelize, Order, OrderItem, Product } from "../models"`
 export { sequelize };

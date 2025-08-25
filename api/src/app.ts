@@ -1,4 +1,3 @@
-// api/src/app.ts
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -13,7 +12,7 @@ import openapi from "./docs/openapi.json";
 
 export const app = express();
 
-app.set("trust proxy", 1); // trust first proxy
+app.set("trust proxy", 1);
 
 const origin = process.env.CORS_ORIGIN || "http://localhost:5173";
 app.use(
