@@ -32,8 +32,8 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.get("/healthz", (_req, res) => res.json({ ok: true }));
 
 // routes
-// app.use("/products", products);
-// app.use("/api/products", products);
+app.use("/products", products);
+app.use("/api/products", products);
 app.use("/checkout", orders);
 app.use("/api", orders);
 app.use("/categories", categories);

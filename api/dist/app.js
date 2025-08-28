@@ -10,6 +10,7 @@ const helmet_1 = __importDefault(require("helmet"));
 const morgan_1 = __importDefault(require("morgan"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
+const products_1 = __importDefault(require("./routes/products"));
 const orders_1 = __importDefault(require("./routes/orders"));
 const categories_1 = __importDefault(require("./routes/categories"));
 const openapi_json_1 = __importDefault(require("./docs/openapi.json"));
@@ -29,8 +30,8 @@ exports.app.use((0, express_rate_limit_1.default)({ windowMs: 15 * 60 * 1000, ma
 exports.app.get("/health", (_req, res) => res.json({ status: "ok" }));
 exports.app.get("/healthz", (_req, res) => res.json({ ok: true }));
 // routes
-// app.use("/products", products);
-// app.use("/api/products", products);
+exports.app.use("/products", products_1.default);
+exports.app.use("/api/products", products_1.default);
 exports.app.use("/checkout", orders_1.default);
 exports.app.use("/api", orders_1.default);
 exports.app.use("/categories", categories_1.default);
