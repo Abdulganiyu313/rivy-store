@@ -4,7 +4,6 @@ import { sequelize } from "./db";
 import { Product, syncAndSeed } from "./models";
 import ordersRouter from "./routes/orders";
 import { logger } from "./logger";
-import { mountOpenAPI } from "./openapi";
 import http from "http";
 console.log("API DATABASE_URL =", process.env.DATABASE_URL);
 
@@ -72,8 +71,6 @@ async function start() {
     app.get("/healthz", (_req, res) =>
       res.status(200).json({ ok: true, uptime: process.uptime() })
     );
-
-    mountOpenAPI(app);
 
     // Start HTTP server (keep reference for graceful shutdown)
     const server = http.createServer(app);
