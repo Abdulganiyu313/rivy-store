@@ -24,14 +24,16 @@ export type ProductQuery = {
 };
 
 // ========= Utils =========
-const API_BASE =
-  (import.meta as any)?.env?.VITE_API_BASE_URL?.replace(/\/+$/, "") || ""; // same-origin if unset
+const rawBase =
+  (import.meta as any)?.env?.VITE_API_URL ??
+  (import.meta as any)?.env?.VITE_API_BASE_URL ??
+  "";
+const API_BASE = String(rawBase).replace(/\/+$/, ""); // trim trailing slash
 
 function apiUrl(path: string): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   return `${API_BASE}${normalized}`;
 }
-
 async function apiFetch<T = unknown>(
   path: string,
   init?: RequestInit
@@ -183,7 +185,7 @@ export async function checkout(
       ? (globalThis as any).crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`);
 
-  const res = await fetch("/api/checkout", {
+  const res = await fetch(apiUrl("/api/checkout"), {
     method: "POST",
     credentials: "include",
     headers: {

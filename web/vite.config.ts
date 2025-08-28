@@ -9,9 +9,18 @@ export default defineConfig({
     port: 5173,
     proxy: {
       // dev proxy -> your API (adjust target if your API is on another port)
-      "/api": { target: "http://localhost:4000", changeOrigin: true },
-      "/products": { target: "http://localhost:4000", changeOrigin: true },
-      "/checkout": { target: "http://localhost:4000", changeOrigin: true },
+      "/api": {
+        target: "https://energystack.onrender.com",
+        changeOrigin: true,
+      },
+      "/products": {
+        target: "https://energystack.onrender.com",
+        changeOrigin: true,
+      },
+      "/checkout": {
+        target: "https://energystack.onrender.com",
+        changeOrigin: true,
+      },
     },
   },
 });
