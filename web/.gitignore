@@ -38,3 +38,6 @@ docker-data/
 
 # MacOS files
 __MACOSX/
+# Windows artifacts
+NUL
+tash clear
