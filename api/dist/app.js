@@ -16,12 +16,21 @@ const categories_1 = __importDefault(require("./routes/categories"));
 const openapi_json_1 = __importDefault(require("./docs/openapi.json"));
 exports.app = (0, express_1.default)();
 exports.app.set("trust proxy", 1);
-const origin = process.env.CORS_ORIGIN || "http://localhost:5173";
-exports.app.use((0, cors_1.default)({
-    origin,
+const allowOrigins = new Set([
+    "https://energystack-web.onrender.com",
+    "http://localhost:5173", // keep for local dev
+]);
+const corsOptions = {
+    origin(origin, cb) {
+        if (!origin || allowOrigins.has(origin))
+            return cb(null, true);
+        return cb(null, false);
+    },
+    credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Idempotency-Key"],
-}));
+};
+exports.app.use((0, cors_1.default)(corsOptions));
 exports.app.use(express_1.default.json());
 exports.app.use((0, helmet_1.default)());
 exports.app.use((0, morgan_1.default)("dev"));

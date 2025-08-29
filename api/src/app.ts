@@ -14,7 +14,7 @@ export const app = express();
 
 app.set("trust proxy", 1);
 
-const allowOrigins = new Set([
+const allowOrigins = new Set<string>([
   "https://energystack-web.onrender.com",
   "http://localhost:5173", // keep for local dev
 ]);
@@ -30,7 +30,7 @@ const corsOptions: cors.CorsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+
 app.use(express.json());
 app.use(helmet());
 app.use(morgan("dev"));
