@@ -14,33 +14,29 @@ const PORT = Number(process.env.PORT) || 4000;
 const HOST = process.env.HOST || "0.0.0.0";
 const IS_PROD = process.env.NODE_ENV === "production";
 const SHOULD_SEED = process.env.SEED === "true" && !IS_PROD; // never seed automatically in prod
-app_1.default.get("/__debug/routes", (_req, res) => {
-    const stack = app_1.default?._router?.stack ?? [];
-    const routes = stack
-        .map((l) => (l.route && l.route.path) ||
-        (l.name === "router" && l.regexp && l.regexp.toString()))
-        .filter(Boolean);
-    console.log("Registered routes:", routes);
-    res.json({ routes });
-});
-// PROOF: DB count + first 3 rows
-app_1.default.get("/__debug/db", async (_req, res) => {
-    const count = await models_1.Product.count();
-    const [sample] = await db_1.sequelize.query('select id, name from "Products" order by id asc limit 3');
-    res.json({ url: process.env.DATABASE_URL, count, sample });
-});
-// GUARANTEED: unique path, bypasses routers
-app_1.default.get("/__dump/products", async (_req, res) => {
-    console.log("HIT /__dump/products (raw SQL)");
-    const [rows] = await db_1.sequelize.query('select * from "Products" order by "createdAt" desc limit 50');
-    res.json({
-        data: rows,
-        page: 1,
-        limit: 50,
-        total: rows.length,
-        totalPages: 1,
-    });
-});
+async function listOrdersHandler(req, res) {
+    try {
+        const limit = Math.min(100, Number(req.query.limit) || 20);
+        const page = Math.max(1, Number(req.query.page) || 1);
+        const offset = (page - 1) * limit;
+        const [rows] = await db_1.sequelize.query('select id, status, "subtotalKobo","taxKobo","totalKobo", name,email,address,currency, "createdAt","updatedAt" from "Orders" order by "createdAt" desc limit $1 offset $2', { bind: [limit, offset] });
+        const [cnt] = await db_1.sequelize.query('select count(*)::int as n from "Orders"');
+        const total = cnt[0]?.n ?? 0;
+        res.json({
+            data: rows,
+            page,
+            limit,
+            total,
+            totalPages: Math.max(1, Math.ceil(total / limit)),
+        });
+    }
+    catch (e) {
+        console.error("orders list error:", e);
+        res.status(500).json({ error: e.message || "orders query failed" });
+    }
+}
+app_1.default.get("/orders", listOrdersHandler);
+app_1.default.get("/api/orders", listOrdersHandler);
 function errToString(e) {
     if (e instanceof Error)
         return e.stack || e.message;
