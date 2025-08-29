@@ -1,13 +1,19 @@
-EnergyStack Storefront — README
+EnergyStack Storefront
 
-A production-grade monorepo for a solar-equipment storefront and mock financing checkout.
+A production-grade monorepo for a solar-equipment storefront with a mock financing checkout.
 
-Repo: rivy-store
-Packages:
+Monorepo: rivy-store
+Packages
 
 api/ — Node.js + Express + TypeScript, Sequelize (PostgreSQL)
 
 web/ — React + TypeScript + Vite
+
+Quick Links:
+Web: https://energystack-web.onrender.com
+ • API: https://energystack.onrender.com
+ • Docs: https://energystack.onrender.com/docs
+ • Health: https://energystack.onrender.com/healthz
 
 Table of Contents
 
@@ -18,6 +24,14 @@ Architecture & Request Flow
 Deployed URLs
 
 Run Locally (without Docker)
+
+Backend — macOS/Linux
+
+Backend — Windows PowerShell
+
+Frontend — macOS/Linux
+
+Frontend — Windows PowerShell
 
 Run with Docker Compose
 
@@ -40,53 +54,35 @@ Appendix
 Overview & Tech Choices
 
 What it is
-EnergyStack is a full-stack reference implementation for an e-commerce storefront that lists solar products, supports search/filters, a product detail page, cart & checkout, and a recent-orders view. Payments are simulated per the brief.
+EnergyStack lists solar products, supports search/filters, PDP, cart, checkout, and a recent orders page. Payments are simulated per the brief.
 
 Why this stack
 
-Express + TypeScript + Sequelize: familiar, strongly-typed API with a mature ORM and straightforward migrations; PostgreSQL for relational integrity and indexes.
+Express + TypeScript + Sequelize for a typed API, migrations, and indexes on PostgreSQL.
 
-React + Vite + TypeScript: fast DX and production builds; component-driven UI with clear loading/empty/error states.
+React + Vite + TypeScript for fast DX and production builds with clean loading/empty/error states.
 
-OpenAPI + Swagger UI: self-documenting HTTP API for assessors and consumers.
+OpenAPI + Swagger UI for self-documenting APIs.
 
-Security & Ops basics: Helmet, CORS, rate limiting, request logging, health checks.
+Security & Ops basics: Helmet, CORS, rate limiting, morgan logs, /healthz.
 
 Architecture & Request Flow
 
-High level
+Ports: Web(5173), API(4000), Postgres(5432)
 
-web/ (Vite + React) reads VITE_API_BASE_URL and calls the backend.
+[Browser]
+   │
+   ├── (HTTP/HTTPS) → [web/ static OR Vite dev]  ← reads VITE_API_BASE_URL
+   │
+   └── fetch /api/* → [api/ Express]
+                      ├─ validate (Zod) + rate limit
+                      ├─ Sequelize → PostgreSQL
+                      ├─ JSON (OpenAPI)
+                      └─ /docs (Swagger), /healthz
 
-api/ validates inputs (Zod), queries PostgreSQL (Sequelize), returns typed JSON.
 
-OpenAPI docs are served at /docs; health at /healthz.
-
-Ports
-
-Web (Vite dev): 5173
-
-API: 4000
-
-PostgreSQL (local/dev): 5432
-
-Sequence (text diagram)
-
-[Browser] ──(HTTPS/HTTP)──> [web/ static or Vite dev]
-      UI actions -> fetch ->  VITE_API_BASE_URL (/api/*)
-                                |
-                                v
-                           [api/ Express]
-                      validate (Zod) + rate limit
-                                |
-                                v
-                         [PostgreSQL via Sequelize]
-                                |
-                                v
-                         JSON response (OpenAPI)
-                                |
-                                v
-                           UI state updates
+CORS (API)
+Allows origin https://energystack-web.onrender.com, credentials=true, methods GET,POST,PUT,PATCH,DELETE,OPTIONS, headers Content-Type, Authorization, Idempotency-Key.
 
 Deployed URLs
 
@@ -96,32 +92,27 @@ Backend API (Render Web Service): https://energystack.onrender.com
 
 Swagger UI: https://energystack.onrender.com/docs
 
-Health check: https://energystack.onrender.com/healthz
+Health: https://energystack.onrender.com/healthz
 
-Quick cURL smoke-tests
+Smoke test
 
-# Products (first 3)
 curl "https://energystack.onrender.com/api/products?limit=3"
 
-# Checkout (simulated payment)
 curl -X POST "https://energystack.onrender.com/api/checkout" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: demo-123" \
   -d '{"customer":{"name":"Demo","email":"demo@example.com","phone":"+2340000000","address":"Lagos"},"lines":[{"productId":1,"qty":1}]}'
 
-# Orders (most recent 5)
 curl "https://energystack.onrender.com/api/orders?limit=5"
 
 Run Locally (without Docker)
 
-Prereqs: Node 18+ (Node 20 recommended), npm, and a running PostgreSQL instance.
-Create a local DB named rivy_store_dev.
+Prereqs: Node 18+ (20 recommended), npm, and a local Postgres DB named rivy_store_dev.
 
-1) Backend (api/)
+Backend — macOS/Linux
 cd api
 npm i
 
-# .env (example — do NOT commit real credentials)
 cat > .env << 'EOF'
 NODE_ENV=development
 PORT=4000
@@ -131,24 +122,19 @@ CORS_ORIGIN=http://localhost:5173
 SEED=false
 EOF
 
-# Migrate and seed (choose one of the two seed paths)
 npx sequelize-cli db:migrate
 
-# Option A: dedicated seeder file (example filename)
+# Seed (choose one)
 npx sequelize-cli db:seed --seed 20250828-load-products.js
+# or
+node scripts/bootstrap-products.js   # reads seeders/data/products.json
 
-# Option B: bootstrap script (reads api/seeders/data/products.json)
-node scripts/bootstrap-products.js
+npm run dev   # http://localhost:4000
 
-npm run dev   # API at http://localhost:4000
-
-
-Windows (PowerShell)
-
+Backend — Windows PowerShell
 cd api
 npm i
 
-# Write .env
 @"
 NODE_ENV=development
 PORT=4000
@@ -160,94 +146,79 @@ SEED=false
 
 npx sequelize-cli db:migrate
 npx sequelize-cli db:seed --seed 20250828-load-products.js
-# or: node scripts/bootstrap-products.js
+# or:
+node scripts/bootstrap-products.js
 
 npm run dev   # http://localhost:4000
 
-2) Frontend (web/)
+Frontend — macOS/Linux
 cd web
 npm i
-# point to local API:
 echo VITE_API_BASE_URL=http://localhost:4000 > .env.local
+npm run dev   # http://localhost:5173
 
-npm run dev   # Web at http://localhost:5173
-
-
-Windows (PowerShell)
-
+Frontend — Windows PowerShell
 cd web
 npm i
 "VITE_API_BASE_URL=http://localhost:4000" | Set-Content -Path .env.local -NoNewline
-
 npm run dev   # http://localhost:5173
 
 Run with Docker Compose
 
-The root includes Compose files for Postgres + API + Web (compose.yml and optionally docker-compose.dev.yml).
-Adjust environment placeholders before first run.
+The repo root contains compose.yml (and optionally docker-compose.dev.yml) for Postgres + API + Web.
 
 macOS/Linux
 
-# From repo root
 docker compose -f compose.yml up --build
-# API  -> http://localhost:4000
-# Web  -> http://localhost:5173
-# DB   -> localhost:5432 (if exposed)
+# API -> http://localhost:4000
+# Web -> http://localhost:5173
 
 
-Windows (PowerShell)
+Windows PowerShell
 
-# From repo root
 docker compose -f compose.yml up --build
-
-
-If you also keep a dev-oriented file:
-
-docker compose -f docker-compose.dev.yml up --build
 
 Environment Variables & Seeding
 API (api/.env for local)
 Name	Description	Example
-NODE_ENV	Environment name	development
+NODE_ENV	Environment	development
 PORT	API port	4000
 DATABASE_URL	Postgres connection string	postgres://postgres:postgres@127.0.0.1:5432/rivy_store_dev
-DATABASE_SSL	Whether to use SSL for DB connection	false (local), true (prod/Neon)
-CORS_ORIGIN	Allowed origin for browser requests	http://localhost:5173
-SEED	Optional flag to seed on boot	false
+DATABASE_SSL	Enable SSL to DB	false (local), true (prod/Neon)
+CORS_ORIGIN	Allowed browser origin	http://localhost:5173
+SEED	Optional: auto-seed on boot	false
 Web (web/.env.local for local)
 Name	Description	Example
-VITE_API_BASE_URL	API base URL used by the UI	http://localhost:4000
-Production (Render) — set safely in dashboard
+VITE_API_BASE_URL	Base URL for API requests	http://localhost:4000
+Production (Render) — placeholders
 
-Backend (Web Service / Node)
+Backend
 
 DATABASE_URL=<NEON_DATABASE_URL_WITH_SSL_PARAMS>
 DATABASE_SSL=true
 CORS_ORIGIN=https://energystack-web.onrender.com
 
 
-Frontend (Static Site)
+Frontend
 
 VITE_API_BASE_URL=https://energystack.onrender.com
 
 Migrations & Seeding
 # from api/
 npx sequelize-cli db:migrate
-
-# Seed path A: dedicated seeder file
 npx sequelize-cli db:seed --seed 20250828-load-products.js
+# or
+node scripts/bootstrap-products.js
 
-# Seed path B: bootstrap script
-node scripts/bootstrap-products.js   # reads api/seeders/data/products.json
 
-
-Seed data location: api/seeders/data/products.json.
+Seed data: api/seeders/data/products.json.
+Bootstrap script: api/scripts/bootstrap-products.js.
 
 Key API Routes
 
-Base URL: ${VITE_API_BASE_URL} (local: http://localhost:4000)
+Base: ${VITE_API_BASE_URL} (local: http://localhost:4000)
 
-GET /api/products — list w/ filters & pagination
+GET /api/products — list with filters & pagination
 Query: q, categoryId, minPriceKobo, maxPriceKobo, inStock, financingEligible, sort=(relevance|price_asc|price_desc|newest), page, limit
 
 GET /api/products/:id — product by id
@@ -256,64 +227,57 @@ POST /api/checkout — simulate checkout & create order
 Body:
 
 {
-  "customer": { "name": "", "email": "", "phone": "", "address": "" },
+  "customer": { "name":"", "email":"", "phone":"", "address":"" },
   "lines": [{ "productId": 1, "qty": 1 }]
 }
 
 
-Headers: Idempotency-Key: <string>
+Header: Idempotency-Key: <string>
 
 GET /api/orders — recent orders (page, limit)
 
-GET /healthz — health probe
+GET /healthz — health
 
 GET /docs — OpenAPI/Swagger UI
 
-Response error shape
+Validation & errors
+Zod for queries/bodies. Error shape:
 
 { "error": { "code": "SERVER_ERROR", "message": "..." } }
 
 
-Security & basics: Helmet, CORS, rate-limit (100/15min), morgan logs.
-Sequelize models/tables: Products, Orders, OrderItems (+ indexes).
+Models: Products, Orders, OrderItems (+ indexes).
 Payments: simulated only.
 
 How to Run Tests
 
-Tests live under api/src/tests/* (unit tests for totals/tax and a handler/e2e).
-Prereqs: local DB available and .env configured (or a test DATABASE_URL).
+Tests live in api/src/tests/* (unit totals/tax + a handler/e2e). Ensure a DB is available and .env is set.
 
 # from api/
 npm test
-# (If using Vitest/Jest locally, ensure devDeps like vitest/jest, supertest, @types/* are installed)
 
 
-Windows (PowerShell)
-
-cd api
-npm test
+If you want to extend locally, install devDeps like vitest or jest, supertest, and @types/*.
 
 Link to API Docs
 
 Swagger UI: https://energystack.onrender.com/docs
 
-Docs are served by the API at /docs from the OpenAPI spec defined in the codebase.
-
-Health endpoint for probes: /healthz.
+Docs are generated from OpenAPI and served at /docs. Health probe: /healthz.
 
 Known Trade-offs
 
-No authentication/admin UI (stretch goal).
+No authentication/admin UI (stretch).
 
-Payments simulated; no third-party gateway integration.
+Payments simulated; no external gateway.
 
-Minimal analytics; basic request logs only.
+Minimal analytics; basic logs only.
 
-Inventory reservation simplified; no timed holds.
+Inventory reservation simplified.
 
-Tests focus on pricing logic; limited end-to-end coverage.
+Tests emphasize pricing logic; broader e2e pending.
 
-Image optimization is basic; no CDN rules yet.
+Basic image optimization; no CDN rules.
 
 Future Improvements
 
@@ -321,52 +285,36 @@ Admin auth + product/order CRUD.
 
 Discount codes & price rules.
 
-Inventory reservation/hold window & stock reconciliation.
+Inventory hold/reservation windows.
 
-Image/CDN optimization and Lighthouse perf budget.
+Image/CDN optimization; Lighthouse perf budget.
 
 Observability: structured logs, tracing, metrics.
 
-CI/CD: automated DB migrations; preview deploys.
+CI/CD with automated DB migrations + preview deploys.
 
-Accessibility audits (keyboard traps, skip-links).
+A11y audits (skip-links, keyboard traps).
 
-Playwright e2e and contract tests (OpenAPI-driven).
+Playwright e2e + contract tests (OpenAPI-driven).
 
 Troubleshooting
 
-CORS
+CORS: Match CORS_ORIGIN with your web origin; set VITE_API_BASE_URL correctly.
+Ports in use: Free 5173, 4000, 5432.
 
-Ensure CORS_ORIGIN (API) matches your frontend origin.
+PowerShell to free API port:
 
-Ensure VITE_API_BASE_URL (web) points to the API.
+Get-Process -Id (Get-NetTCPConnection -LocalPort 4000).OwningProcess | Stop-Process
 
-Windows/PowerShell quirks
 
-Writing .env/.env.local: use Set-Content (see examples above).
-
-Port conflicts: stop other processes using 5173, 4000, or 5432.
-
-PowerShell: Get-Process -Id (Get-NetTCPConnection -LocalPort 4000).OwningProcess | Stop-Process
-
-Neon / SSL
-
-Production DB requires SSL. Set DATABASE_SSL=true and use the SSL-enabled DATABASE_URL.
-
-Idempotency
-
-For POST /api/checkout, send a unique Idempotency-Key. Reusing the same key avoids duplicate orders on retries.
-
-Vite 403/404
-
-If dev server starts but API calls fail, verify VITE_API_BASE_URL and that the API is reachable at that URL.
+Neon SSL: Use the SSL connection string and set DATABASE_SSL=true.
+Idempotency: Reuse the same Idempotency-Key to prevent duplicate orders on retries.
+Vite dev 403/404: Ensure .env.local has the correct VITE_API_BASE_URL.
 
 Appendix
 
-Frontend pages
-Catalog (search + filters + pagination), Product Detail, Cart, Checkout, Orders (recent orders / confirmation). Mobile-first with graceful loading/empty/error states.
-
-Example product JSON shape (simplified)
+Frontend pages: Catalog (search + filters + pagination), Product detail, Cart, Checkout, Orders (recent).
+Example product JSON
 
 {
   "id": 1,
@@ -380,17 +328,14 @@ Example product JSON shape (simplified)
 }
 
 
-Why priceKobo
-Prices are stored as integers in kobo to avoid floating-point rounding issues.
+Why priceKobo: integers avoid floating-point errors.
+Wireframes: <WIREFRAME_URL>
 
-Wireframes
-Mid-fi links to be added: <WIREFRAME_URL>
-
-Deploy (Render) — Reference
+Deploy (Render) Reference
 
 API (Web Service / Node)
 
-Root dir: api
+Root: api
 
 Build: npm ci && npm run build
 
@@ -400,25 +345,10 @@ Env: DATABASE_URL, DATABASE_SSL=true, CORS_ORIGIN=...
 
 Web (Static Site)
 
-Root dir: web
+Root: web
 
 Build: npm ci && npm run build
 
 Publish dir: dist
 
-Env: VITE_API_BASE_URL=https://energystack.onrender.com
-
-Build & Start (API only)
-cd api
-npm run build     # compiles to dist/
-npm run start     # node dist/server.js
-
-
-Windows (PowerShell)
-
-cd api
-npm run build
-npm run start
-
-
-Assessor note: The frontend reads VITE_API_BASE_URL. All pages handle empty/error states gracefully. Health checks are exposed at /healthz; API docs at /docs.
+Env: VITE_API_BASE_URL=https://ene
