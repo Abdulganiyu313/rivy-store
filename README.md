@@ -386,7 +386,7 @@ npm test
   <p>Store prices as integers (kobo) to avoid floating-point rounding issues.</p>
 
   <h3>Wireframes</h3>
-  <p><code>&lt;WIREFRAME_URL&gt;</code></p>
+  <p><code>https://drive.google.com/file/d/1cPn_F6Rr2a7YyMiuXZzBhK3Y-5rkLEq5/view</code></p>
 </section>
 
 <hr/>
