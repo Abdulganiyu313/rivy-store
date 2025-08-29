@@ -37,7 +37,7 @@
 
   <h3>What it is</h3>
   <p>
-    EnergyStack lists solar products, supports search/filters, product detail, cart, checkout, and a recent-orders page.
+    EnergyStack lists solar products, supports search/filters, product detail, cart, checkout, recent orders page, and a contact us page where user can make inquires.
     Payments are simulated per the brief.
   </p>
 
