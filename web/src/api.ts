@@ -212,3 +212,32 @@ export async function checkout(
 
   return res.json();
 }
+
+// --- below your existing Product types ---
+
+export type OrderSummary = {
+  id: number;
+  status: string;
+  createdAt: string;
+  subtotalKobo: number;
+  taxKobo: number;
+  totalKobo: number;
+  name?: string | null;
+};
+
+export type OrdersResponse = {
+  data: OrderSummary[];
+  total: number;
+  totalPages: number;
+};
+
+export async function fetchOrders(
+  params: { page?: number; limit?: number } = {}
+): Promise<OrdersResponse> {
+  const usp = new URLSearchParams();
+  if (params.page != null) usp.set("page", String(params.page));
+  if (params.limit != null) usp.set("limit", String(params.limit));
+  return apiFetch<OrdersResponse>(
+    `/api/orders${usp.toString() ? `?${usp.toString()}` : ""}`
+  );
+}

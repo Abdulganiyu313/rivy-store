@@ -1,22 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SafePrice from "../components/SafePrice";
-
-type OrderSummary = {
-  id: number;
-  status: string;
-  createdAt: string;
-  subtotalKobo: number;
-  taxKobo: number;
-  totalKobo: number;
-  name?: string | null;
-};
-
-type OrdersResponse = {
-  data: OrderSummary[];
-  total: number;
-  totalPages: number;
-};
+import { fetchOrders, OrderSummary } from "../api";
 
 export default function ConfirmationPage() {
   const nav = useNavigate();
@@ -27,46 +12,23 @@ export default function ConfirmationPage() {
 
   useEffect(() => {
     let alive = true;
-    (async () => {
-      setLoading(true);
-      setErr(null);
-      try {
-        const res = await fetch("/api/orders");
-        // Fail fast on HTTP errors
-        if (!res.ok) {
-          let msg = res.statusText;
-          try {
-            const j = await res.json();
-            msg = j?.error?.message || msg;
-          } catch {
-            // ignore JSON parse errors (could be HTML)
-          }
-          throw new Error(msg || "Failed to load orders");
-        }
+    setLoading(true);
+    setErr(null);
 
-        const payload: unknown = await res.json();
-
-        // Validate shape at runtime
-        const isValid =
-          payload &&
-          typeof payload === "object" &&
-          Array.isArray((payload as any).data);
-
-        if (!isValid) {
-          throw new Error("Invalid response from server");
-        }
-
-        const { data, total } = payload as OrdersResponse;
-        if (alive) {
-          setItems(data);
-          setTotal(total);
-        }
-      } catch (e: any) {
-        setErr(e?.message || "Something went wrong");
-      } finally {
+    fetchOrders({ page: 1, limit: 20 })
+      .then(({ data, total }) => {
+        if (!alive) return;
+        setItems(data);
+        setTotal(total);
+      })
+      .catch((e: any) => {
+        if (!alive) return;
+        setErr(e?.message || "Failed to load orders");
+      })
+      .finally(() => {
         if (alive) setLoading(false);
-      }
-    })();
+      });
+
     return () => {
       alive = false;
     };
@@ -80,7 +42,6 @@ export default function ConfirmationPage() {
 
   return (
     <div className="container" style={{ padding: "24px 0" }}>
-      {/* Back */}
       <button
         type="button"
         className="btn"
@@ -102,7 +63,6 @@ export default function ConfirmationPage() {
           overflow: "hidden",
         }}
       >
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -135,7 +95,6 @@ export default function ConfirmationPage() {
           </div>
         </div>
 
-        {/* Body */}
         <div style={{ padding: 16 }}>
           {loading && <div>Loading orders…</div>}
 
